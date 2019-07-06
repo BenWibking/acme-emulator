@@ -1,0 +1,419 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>compute_mock &mdash; ACME Emulator  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> ACME Emulator
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ACME Emulator</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">Module code</a> &raquo;</li>
+        
+      <li>compute_mock</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for compute_mock</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+
+<span class="kn">from</span> <span class="nn">os</span> <span class="k">import</span> <span class="n">path</span>
+<span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">scipy.optimize</span>
+<span class="kn">import</span> <span class="nn">h5py</span> <span class="k">as</span> <span class="nn">h5</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="kn">import</span> <span class="nn">config</span>
+<span class="kn">import</span> <span class="nn">configparser</span>
+
+
+<div class="viewcode-block" id="compute_ngal"><a class="viewcode-back" href="../compute_mock.html#compute_mock.compute_ngal">[docs]</a><span class="k">def</span> <span class="nf">compute_ngal</span><span class="p">(</span><span class="n">logM</span><span class="p">,</span> <span class="n">dM</span><span class="p">,</span> <span class="n">mass_function</span><span class="p">,</span> <span class="n">logMmin</span><span class="p">,</span> <span class="n">M1_over_Mmin</span><span class="p">,</span> <span class="n">M0_over_M1</span><span class="p">,</span>
+				 <span class="n">alpha</span><span class="p">,</span> <span class="n">siglogM</span><span class="p">,</span> <span class="n">f_cen</span><span class="p">):</span>
+
+    <span class="n">M</span> <span class="o">=</span> <span class="mf">10.</span><span class="o">**</span><span class="n">logM</span>
+    <span class="n">Mmin</span> <span class="o">=</span> <span class="mf">10.</span><span class="o">**</span><span class="n">logMmin</span>
+    <span class="n">M1</span> <span class="o">=</span> <span class="n">M1_over_Mmin</span><span class="o">*</span><span class="n">Mmin</span>
+    <span class="n">M0</span> <span class="o">=</span> <span class="n">M0_over_M1</span><span class="o">*</span><span class="n">M1</span>
+    <span class="n">mean_cen</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.</span> <span class="o">+</span> <span class="n">scipy</span><span class="o">.</span><span class="n">special</span><span class="o">.</span><span class="n">erf</span><span class="p">((</span><span class="n">logM</span> <span class="o">-</span> <span class="n">logMmin</span><span class="p">)</span><span class="o">/</span><span class="n">siglogM</span><span class="p">))</span>
+    <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">invalid</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">):</span>
+        <span class="n">mean_sat</span> <span class="o">=</span> <span class="n">mean_cen</span> <span class="o">*</span> <span class="p">(((</span><span class="n">M</span> <span class="o">-</span> <span class="n">M0</span><span class="p">)</span> <span class="o">/</span> <span class="n">M1</span><span class="p">)</span><span class="o">**</span><span class="n">alpha</span><span class="p">)</span>
+
+    <span class="n">ngal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">logM</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="n">ngal</span> <span class="o">+=</span> <span class="n">mean_cen</span> <span class="o">*</span> <span class="n">f_cen</span> <span class="c1"># f_cen should not affect satellites</span>
+    <span class="n">ngal</span><span class="p">[</span><span class="n">M</span> <span class="o">&gt;</span> <span class="n">M0</span><span class="p">]</span> <span class="o">+=</span> <span class="n">mean_sat</span><span class="p">[</span><span class="n">logM</span> <span class="o">&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">M0</span><span class="p">)]</span>
+    <span class="n">ngal</span> <span class="o">*=</span> <span class="n">mass_function</span>
+
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">ngal</span><span class="o">*</span><span class="n">dM</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="compute_ncen"><a class="viewcode-back" href="../compute_mock.html#compute_mock.compute_ncen">[docs]</a><span class="k">def</span> <span class="nf">compute_ncen</span><span class="p">(</span><span class="n">logM</span><span class="p">,</span> <span class="n">dM</span><span class="p">,</span> <span class="n">mass_function</span><span class="p">,</span> <span class="n">logMmin</span><span class="p">,</span> <span class="n">siglogM</span><span class="p">,</span> <span class="n">f_cen</span><span class="p">):</span>
+
+    <span class="n">M</span> <span class="o">=</span> <span class="mf">10.</span><span class="o">**</span><span class="n">logM</span>
+    <span class="n">Mmin</span> <span class="o">=</span> <span class="mf">10.</span><span class="o">**</span><span class="n">logMmin</span>
+    <span class="n">mean_cen</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.</span> <span class="o">+</span> <span class="n">scipy</span><span class="o">.</span><span class="n">special</span><span class="o">.</span><span class="n">erf</span><span class="p">((</span><span class="n">logM</span> <span class="o">-</span> <span class="n">logMmin</span><span class="p">)</span><span class="o">/</span><span class="n">siglogM</span><span class="p">))</span>
+    <span class="n">ngal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">logM</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="n">ngal</span> <span class="o">+=</span> <span class="n">mean_cen</span> <span class="o">*</span> <span class="n">f_cen</span>
+    <span class="n">ngal</span> <span class="o">*=</span> <span class="n">mass_function</span>
+    
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">ngal</span><span class="o">*</span><span class="n">dM</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="compute_HOD_parameters"><a class="viewcode-back" href="../compute_mock.html#compute_mock.compute_HOD_parameters">[docs]</a><span class="k">def</span> <span class="nf">compute_HOD_parameters</span><span class="p">(</span><span class="n">ngal</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">M1_over_Mmin</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">M0_over_M1</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+						   <span class="n">siglogM</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">f_cen</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+						   <span class="n">halos</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mass_fun_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">logMmin_guess</span><span class="o">=</span><span class="mf">13.2</span><span class="p">):</span>
+                           
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute the physical (er, Msun h^-1) HOD parameters from ratios of masses</span>
+<span class="sd">    and the desired number density of galaxies.</span>
+<span class="sd">    We convert the number density of galaxies into Mmin using the halo mass function.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">assert</span><span class="p">(</span><span class="n">M0_over_M1</span> <span class="o">&gt;</span> <span class="mf">0.</span><span class="p">)</span>
+
+    <span class="n">binmin</span><span class="p">,</span> <span class="n">binmax</span><span class="p">,</span> <span class="n">mass_function</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">mass_fun_file</span><span class="p">,</span> <span class="n">unpack</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    
+    <span class="k">assert</span><span class="p">(</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">mass_function</span><span class="p">)</span> <span class="p">))</span>
+    <span class="k">assert</span><span class="p">(</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">binmin</span><span class="p">)</span> <span class="p">))</span>
+    <span class="k">assert</span><span class="p">(</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">binmax</span><span class="p">)</span> <span class="p">))</span>
+    
+    <span class="n">dM</span> <span class="o">=</span> <span class="n">binmax</span> <span class="o">-</span> <span class="n">binmin</span>
+    <span class="n">M</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">binmax</span><span class="o">+</span><span class="n">binmin</span><span class="p">)</span>
+    <span class="n">logM</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">M</span><span class="p">)</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    now solve for logMmin:</span>
+<span class="sd">    compute_ngal(...) - ndens = 0</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">this_ngal</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">logMmin</span><span class="p">:</span> <span class="n">compute_ngal</span><span class="p">(</span><span class="n">logM</span><span class="p">,</span> <span class="n">dM</span><span class="p">,</span> <span class="n">mass_function</span><span class="p">,</span> <span class="n">logMmin</span><span class="p">,</span>
+    										 <span class="n">M1_over_Mmin</span><span class="p">,</span> <span class="n">M0_over_M1</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">siglogM</span><span class="p">,</span> <span class="n">f_cen</span><span class="p">)</span>
+    <span class="n">objective</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">logMmin</span><span class="p">:</span> <span class="n">this_ngal</span><span class="p">(</span><span class="n">logMmin</span><span class="p">)</span> <span class="o">-</span> <span class="n">ngal</span>
+    
+    <span class="n">logMmin</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">optimize</span><span class="o">.</span><span class="n">newton</span><span class="p">(</span><span class="n">objective</span><span class="p">,</span> <span class="n">logMmin_guess</span><span class="p">,</span> <span class="n">maxiter</span> <span class="o">=</span> <span class="mi">100</span><span class="p">)</span>
+    <span class="n">Mmin</span> <span class="o">=</span> <span class="mi">10</span><span class="o">**</span><span class="p">(</span><span class="n">logMmin</span><span class="p">)</span>
+    <span class="n">M1</span> <span class="o">=</span> <span class="n">Mmin</span><span class="o">*</span><span class="n">M1_over_Mmin</span>
+    <span class="n">M0</span> <span class="o">=</span> <span class="n">M1</span><span class="o">*</span><span class="n">M0_over_M1</span>
+    
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;logMmin: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">logMmin</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;optimized ngal: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">this_ngal</span><span class="p">(</span><span class="n">logMmin</span><span class="p">),</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;desired ngal: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">ngal</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">logMmin</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">M0</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">M1</span><span class="p">)</span></div>
+    
+
+<div class="viewcode-block" id="compute_HOD_parameters_centralsonly"><a class="viewcode-back" href="../compute_mock.html#compute_mock.compute_HOD_parameters_centralsonly">[docs]</a><span class="k">def</span> <span class="nf">compute_HOD_parameters_centralsonly</span><span class="p">(</span><span class="n">ncen</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">siglogM</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">f_cen</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                        <span class="n">halos</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mass_fun_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                        <span class="n">logMmin_guess</span><span class="o">=</span><span class="mf">13.5</span><span class="p">):</span>
+                                        
+    <span class="n">binmin</span><span class="p">,</span> <span class="n">binmax</span><span class="p">,</span> <span class="n">mass_function</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">mass_fun_file</span><span class="p">,</span> <span class="n">unpack</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">dM</span> <span class="o">=</span> <span class="n">binmax</span> <span class="o">-</span> <span class="n">binmin</span>
+    <span class="n">M</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">binmax</span><span class="o">+</span><span class="n">binmin</span><span class="p">)</span>
+    <span class="n">logM</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">M</span><span class="p">)</span>
+
+    <span class="n">this_ncen</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">logMmin</span><span class="p">:</span> <span class="n">compute_ncen</span><span class="p">(</span><span class="n">logM</span><span class="p">,</span> <span class="n">dM</span><span class="p">,</span> <span class="n">mass_function</span><span class="p">,</span> <span class="n">logMmin</span><span class="p">,</span> <span class="n">siglogM</span><span class="p">,</span> <span class="n">f_cen</span><span class="p">)</span>
+    <span class="n">objective</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">logMmin</span><span class="p">:</span> <span class="n">this_ncen</span><span class="p">(</span><span class="n">logMmin</span><span class="p">)</span> <span class="o">-</span> <span class="n">ncen</span>
+    
+    <span class="n">logMmin</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">optimize</span><span class="o">.</span><span class="n">newton</span><span class="p">(</span><span class="n">objective</span><span class="p">,</span> <span class="n">logMmin_guess</span><span class="p">,</span> <span class="n">maxiter</span> <span class="o">=</span> <span class="mi">100</span><span class="p">)</span>
+    <span class="n">Mmin</span> <span class="o">=</span> <span class="mi">10</span><span class="o">**</span><span class="p">(</span><span class="n">logMmin</span><span class="p">)</span>
+    
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;logMmin: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">logMmin</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;optimized ncen: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">this_ncen</span><span class="p">(</span><span class="n">logMmin</span><span class="p">),</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;desired ncen: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">ncen</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">logMmin</span></div>
+
+
+<div class="viewcode-block" id="populate_hod"><a class="viewcode-back" href="../compute_mock.html#compute_mock.populate_hod">[docs]</a><span class="k">def</span> <span class="nf">populate_hod</span><span class="p">(</span><span class="n">halo_file</span><span class="p">,</span> <span class="n">galaxy_file</span><span class="p">,</span> <span class="n">env_file</span><span class="p">,</span>
+                 <span class="n">omega_m</span><span class="p">,</span><span class="n">redshift</span><span class="p">,</span><span class="n">boxsize</span><span class="p">,</span><span class="n">siglogM</span><span class="p">,</span><span class="n">logMmin</span><span class="p">,</span><span class="n">logM0</span><span class="p">,</span><span class="n">logM1</span><span class="p">,</span><span class="n">alpha</span><span class="p">,</span>
+                 <span class="n">q_env</span><span class="p">,</span><span class="n">del_gamma</span><span class="p">,</span><span class="n">f_cen</span><span class="p">,</span><span class="n">A_conc</span><span class="p">,</span><span class="n">delta_b</span><span class="p">,</span><span class="n">delta_c</span><span class="p">,</span><span class="n">R_rescale</span><span class="p">,</span><span class="n">is_stochastic</span><span class="p">,</span><span class="n">seed</span><span class="p">):</span>
+                 
+    <span class="n">script_path</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span><span class="o">+</span><span class="s2">&quot;/../cHOD/compute_mocks&quot;</span>
+    
+    <span class="n">cmd_line</span> <span class="o">=</span> <span class="p">[</span><span class="n">script_path</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">omega_m</span><span class="p">),</span><span class="nb">str</span><span class="p">(</span><span class="n">redshift</span><span class="p">),</span>
+                <span class="nb">str</span><span class="p">(</span><span class="n">siglogM</span><span class="p">),</span><span class="nb">str</span><span class="p">(</span><span class="n">logMmin</span><span class="p">),</span><span class="nb">str</span><span class="p">(</span><span class="n">logM0</span><span class="p">),</span><span class="nb">str</span><span class="p">(</span><span class="n">logM1</span><span class="p">),</span>
+                <span class="nb">str</span><span class="p">(</span><span class="n">alpha</span><span class="p">),</span><span class="nb">str</span><span class="p">(</span><span class="n">q_env</span><span class="p">),</span><span class="nb">str</span><span class="p">(</span><span class="n">del_gamma</span><span class="p">),</span><span class="nb">str</span><span class="p">(</span><span class="n">f_cen</span><span class="p">),</span>
+                <span class="nb">str</span><span class="p">(</span><span class="n">A_conc</span><span class="p">),</span><span class="nb">str</span><span class="p">(</span><span class="n">delta_b</span><span class="p">),</span><span class="nb">str</span><span class="p">(</span><span class="n">delta_c</span><span class="p">),</span><span class="nb">str</span><span class="p">(</span><span class="n">R_rescale</span><span class="p">),</span>
+                <span class="nb">str</span><span class="p">(</span><span class="n">boxsize</span><span class="p">),</span>
+                <span class="n">halo_file</span><span class="p">,</span><span class="n">galaxy_file</span><span class="p">,</span><span class="n">env_file</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">is_stochastic</span><span class="p">),</span><span class="nb">str</span><span class="p">(</span><span class="n">seed</span><span class="p">)]</span>
+                
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cmd_line</span><span class="p">),</span><span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+    
+    <span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">cmd_line</span><span class="p">)</span></div>
+    
+
+<div class="viewcode-block" id="compute"><a class="viewcode-back" href="../compute_mock.html#compute_mock.compute">[docs]</a><span class="k">def</span> <span class="nf">compute</span><span class="p">(</span><span class="n">halo_file</span><span class="p">,</span><span class="n">env_file</span><span class="p">,</span><span class="n">header_file</span><span class="p">,</span><span class="n">output_file</span><span class="p">,</span>
+            <span class="n">siglogM</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">logMmin</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">logM0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">logM1</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">alpha</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">q_env</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">del_gamma</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">f_cen</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">A_conc</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">delta_b</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">delta_c</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">R_rescale</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">is_stochastic</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+            
+    <span class="n">cf</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">AbacusConfigFile</span><span class="p">(</span><span class="n">header_file</span><span class="p">)</span>
+    <span class="n">boxsize</span> <span class="o">=</span> <span class="n">cf</span><span class="o">.</span><span class="n">boxSize</span>
+    <span class="n">omeganow_m</span> <span class="o">=</span> <span class="n">cf</span><span class="o">.</span><span class="n">OmegaNow_m</span>
+    <span class="n">omega_m</span> <span class="o">=</span> <span class="n">cf</span><span class="o">.</span><span class="n">Omega_M</span>
+    <span class="n">redshift</span> <span class="o">=</span> <span class="n">cf</span><span class="o">.</span><span class="n">redshift</span>
+
+    <span class="c1">## now compute HOD</span>
+    
+    <span class="n">populate_hod</span><span class="p">(</span><span class="n">halo_file</span><span class="p">,</span> <span class="n">output_file</span><span class="p">,</span> <span class="n">env_file</span><span class="p">,</span>
+                 <span class="n">omega_m</span><span class="p">,</span><span class="n">redshift</span><span class="p">,</span><span class="n">boxsize</span><span class="p">,</span><span class="n">siglogM</span><span class="p">,</span><span class="n">logMmin</span><span class="p">,</span><span class="n">logM0</span><span class="p">,</span><span class="n">logM1</span><span class="p">,</span><span class="n">alpha</span><span class="p">,</span>
+                 <span class="n">q_env</span><span class="p">,</span><span class="n">del_gamma</span><span class="p">,</span><span class="n">f_cen</span><span class="p">,</span><span class="n">A_conc</span><span class="p">,</span><span class="n">delta_b</span><span class="p">,</span><span class="n">delta_c</span><span class="p">,</span><span class="n">R_rescale</span><span class="p">,</span>
+                 <span class="nb">int</span><span class="p">(</span><span class="n">is_stochastic</span><span class="p">),</span><span class="n">seed</span><span class="p">)</span>
+
+    <span class="c1">## read back output file</span>
+    
+    <span class="k">with</span> <span class="n">h5</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">output_file</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">mock</span><span class="p">:</span>
+        <span class="n">vol</span> <span class="o">=</span> <span class="n">boxsize</span><span class="o">**</span><span class="mi">3</span>
+        <span class="n">ngal_obtained</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">mock</span><span class="p">[</span><span class="s1">&#39;particles&#39;</span><span class="p">][</span><span class="s1">&#39;weight&#39;</span><span class="p">])</span> <span class="o">/</span> <span class="n">vol</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;obtained ngal: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">ngal_obtained</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span></div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+
+	<span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+	
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;hod_params_path&#39;</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;header_path&#39;</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;halo_path&#39;</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;output_path&#39;</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;env_path&#39;</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;mass_fun_path&#39;</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--centrals_only&#39;</span><span class="p">,</span><span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">)</span>
+	<span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+	
+	
+	<span class="c1">## read meta-HOD parameters</span>
+	
+	<span class="n">myconfigparser</span> <span class="o">=</span> <span class="n">configparser</span><span class="o">.</span><span class="n">ConfigParser</span><span class="p">()</span>
+	<span class="n">myconfigparser</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">hod_params_path</span><span class="p">)</span>
+	<span class="n">params</span> <span class="o">=</span> <span class="n">myconfigparser</span><span class="p">[</span><span class="s1">&#39;params&#39;</span><span class="p">]</span>
+	
+	<span class="n">f_cen</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;f_cen&#39;</span><span class="p">])</span>
+	<span class="n">A_conc</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;A_conc&#39;</span><span class="p">])</span>
+	<span class="n">delta_b</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;delta_b&#39;</span><span class="p">])</span>
+	<span class="n">delta_c</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;delta_c&#39;</span><span class="p">])</span>
+	
+	<span class="k">if</span> <span class="s1">&#39;R_rescale&#39;</span> <span class="ow">in</span> <span class="n">params</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+		<span class="n">R_rescale</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;R_rescale&#39;</span><span class="p">])</span>
+	<span class="k">else</span><span class="p">:</span>
+		<span class="n">R_rescale</span> <span class="o">=</span> <span class="mf">1.0</span>
+		
+	<span class="n">stochastic</span> <span class="o">=</span> <span class="kc">False</span>
+	<span class="n">seed</span> <span class="o">=</span> <span class="mi">42</span>
+	
+	<span class="k">if</span> <span class="s1">&#39;is_stochastic&#39;</span> <span class="ow">in</span> <span class="n">params</span><span class="p">:</span>
+	    <span class="n">stochastic</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;is_stochastic&#39;</span><span class="p">])</span>
+	    <span class="k">if</span> <span class="s1">&#39;seed&#39;</span> <span class="ow">in</span> <span class="n">params</span><span class="p">:</span>
+	        <span class="n">seed</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;seed&#39;</span><span class="p">])</span>
+	
+	
+	<span class="c1">## find HOD parameters</span>
+	
+	<span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">centrals_only</span> <span class="o">==</span> <span class="kc">False</span><span class="p">:</span>
+	
+	    <span class="n">logMmin</span><span class="p">,</span> <span class="n">logM0</span><span class="p">,</span> <span class="n">logM1</span> <span class="o">=</span> <span class="n">compute_HOD_parameters</span><span class="p">(</span><span class="n">ngal</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;ngal&#39;</span><span class="p">]),</span>
+	                                                   <span class="n">siglogM</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;siglogm&#39;</span><span class="p">]),</span>
+	                                                   <span class="n">M0_over_M1</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;m0_over_m1&#39;</span><span class="p">]),</span>
+	                                                   <span class="n">M1_over_Mmin</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;m1_over_mmin&#39;</span><span class="p">]),</span>
+	                                                   <span class="n">alpha</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;alpha&#39;</span><span class="p">]),</span>
+	                                                   <span class="n">f_cen</span><span class="o">=</span><span class="n">f_cen</span><span class="p">,</span>
+	                                                   <span class="n">halos</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">halo_path</span><span class="p">,</span>
+	                                                   <span class="n">header</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">header_path</span><span class="p">,</span>
+	                                                   <span class="n">mass_fun_file</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">mass_fun_path</span><span class="p">)</span>
+	
+	    <span class="n">compute</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">halo_path</span><span class="p">,</span><span class="n">args</span><span class="o">.</span><span class="n">env_path</span><span class="p">,</span><span class="n">args</span><span class="o">.</span><span class="n">header_path</span><span class="p">,</span><span class="n">args</span><span class="o">.</span><span class="n">output_path</span><span class="p">,</span>
+	            <span class="n">params</span><span class="p">[</span><span class="s1">&#39;siglogm&#39;</span><span class="p">],</span><span class="n">logMmin</span><span class="p">,</span><span class="n">logM0</span><span class="p">,</span><span class="n">logM1</span><span class="p">,</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;alpha&#39;</span><span class="p">],</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;q_env&#39;</span><span class="p">],</span>
+	            <span class="n">params</span><span class="p">[</span><span class="s1">&#39;del_gamma&#39;</span><span class="p">],</span><span class="n">f_cen</span><span class="p">,</span><span class="n">A_conc</span><span class="p">,</span><span class="n">delta_b</span><span class="p">,</span><span class="n">delta_c</span><span class="p">,</span><span class="n">R_rescale</span><span class="p">,</span>
+	            <span class="n">stochastic</span><span class="p">,</span><span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">)</span>
+	            
+	<span class="k">else</span><span class="p">:</span>
+	
+	    <span class="c1"># only compute HOD for centrals, *assuming the number density of centrals is fixed*</span>
+	    <span class="n">logMmin</span> <span class="o">=</span> <span class="n">compute_HOD_parameters_centralsonly</span><span class="p">(</span><span class="n">ncen</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;ncen&#39;</span><span class="p">]),</span>
+	                                                  <span class="n">siglogM</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;siglogm&#39;</span><span class="p">]),</span>
+	                                                  <span class="n">f_cen</span><span class="o">=</span><span class="n">f_cen</span><span class="p">,</span>
+	                                                  <span class="n">halos</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">halo_path</span><span class="p">,</span>
+	                                                  <span class="n">header</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">header_path</span><span class="p">,</span>
+	                                                  <span class="n">mass_fun_file</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">mass_fun_path</span><span class="p">)</span>
+	                                                  
+	    <span class="n">logM0</span> <span class="o">=</span> <span class="mf">14.</span> <span class="c1"># these sat. parameters will be ignored</span>
+	    <span class="n">logM1</span> <span class="o">=</span> <span class="mf">15.</span>
+	    
+	    <span class="n">compute</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">halo_path</span><span class="p">,</span><span class="n">args</span><span class="o">.</span><span class="n">env_path</span><span class="p">,</span><span class="n">args</span><span class="o">.</span><span class="n">header_path</span><span class="p">,</span><span class="n">args</span><span class="o">.</span><span class="n">output_path</span><span class="p">,</span>
+	            <span class="n">params</span><span class="p">[</span><span class="s1">&#39;siglogm&#39;</span><span class="p">],</span><span class="n">logMmin</span><span class="p">,</span><span class="n">logM0</span><span class="p">,</span><span class="n">logM1</span><span class="p">,</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;alpha&#39;</span><span class="p">],</span>
+	            <span class="n">params</span><span class="p">[</span><span class="s1">&#39;q_env&#39;</span><span class="p">],</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;del_gamma&#39;</span><span class="p">],</span><span class="n">f_cen</span><span class="p">,</span><span class="n">A_conc</span><span class="p">,</span><span class="n">delta_b</span><span class="p">,</span><span class="n">delta_c</span><span class="p">,</span><span class="n">R_rescale</span><span class="p">,</span>
+	            <span class="n">stochastic</span><span class="p">,</span><span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">)</span>
+	    
+	
+
+
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Ben Wibking
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

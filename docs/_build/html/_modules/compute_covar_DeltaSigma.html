@@ -1,0 +1,592 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>compute_covar_DeltaSigma &mdash; ACME Emulator  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> ACME Emulator
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ACME Emulator</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">Module code</a> &raquo;</li>
+        
+      <li>compute_covar_DeltaSigma</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for compute_covar_DeltaSigma</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">numpy.linalg</span> <span class="k">as</span> <span class="nn">linalg</span>
+<span class="kn">import</span> <span class="nn">scipy.integrate</span> <span class="k">as</span> <span class="nn">integrate</span>
+<span class="kn">import</span> <span class="nn">scipy.interpolate</span> <span class="k">as</span> <span class="nn">interpolate</span>
+<span class="kn">import</span> <span class="nn">scipy.special</span> <span class="k">as</span> <span class="nn">special</span>
+<span class="kn">import</span> <span class="nn">configparser</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">compute_DeltaSigma</span> <span class="k">import</span> <span class="n">sigma_crit</span>
+
+
+<div class="viewcode-block" id="cov_signal_restrict_scales"><a class="viewcode-back" href="../compute_covar_DeltaSigma.html#compute_covar_DeltaSigma.cov_signal_restrict_scales">[docs]</a><span class="k">def</span> <span class="nf">cov_signal_restrict_scales</span><span class="p">(</span><span class="n">cov</span><span class="p">,</span> <span class="n">signal</span><span class="p">,</span> <span class="n">bins</span><span class="p">,</span> <span class="n">rp_min</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">rp_max</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;return cov, wp restricted to scales rmin &lt; rp &lt; rmax&quot;&quot;&quot;</span>
+	<span class="n">bin_centers</span><span class="p">,</span> <span class="n">bin_widths</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">bins</span><span class="p">)</span>
+	<span class="n">bin_centers</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">bin_centers</span><span class="p">)</span>
+	<span class="n">binmask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">bin_centers</span> <span class="o">&gt;</span> <span class="n">rp_min</span><span class="p">,</span> <span class="n">bin_centers</span> <span class="o">&lt;</span> <span class="n">rp_max</span><span class="p">)</span>
+	<span class="n">cov_mask</span> <span class="o">=</span> <span class="n">cov</span><span class="p">[</span><span class="n">binmask</span><span class="p">,</span> <span class="p">:][:,</span> <span class="n">binmask</span><span class="p">]</span>
+	<span class="n">signal_mask</span> <span class="o">=</span> <span class="n">signal</span><span class="p">[</span><span class="n">binmask</span><span class="p">]</span>
+	<span class="k">return</span> <span class="n">cov_mask</span><span class="p">,</span> <span class="n">signal_mask</span></div>
+
+
+<div class="viewcode-block" id="measurement_bins"><a class="viewcode-back" href="../compute_covar_DeltaSigma.html#compute_covar_DeltaSigma.measurement_bins">[docs]</a><span class="k">def</span> <span class="nf">measurement_bins</span><span class="p">(</span><span class="n">rmin</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">rmax</span><span class="o">=</span><span class="mf">30.0</span><span class="p">,</span> <span class="n">nbins</span><span class="o">=</span><span class="mi">30</span><span class="p">):</span>
+	<span class="n">bins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logspace</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">rmin</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">rmax</span><span class="p">),</span> <span class="n">nbins</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+	<span class="n">widths</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">bins</span><span class="p">)</span>
+	<span class="n">centers</span> <span class="o">=</span> <span class="n">bins</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">widths</span>
+	<span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">centers</span><span class="p">,</span> <span class="n">widths</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="my_sinc"><a class="viewcode-back" href="../compute_covar_DeltaSigma.html#compute_covar_DeltaSigma.my_sinc">[docs]</a><span class="k">def</span> <span class="nf">my_sinc</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+	<span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">/</span> <span class="n">x</span></div>
+
+
+<div class="viewcode-block" id="supersample_pk"><a class="viewcode-back" href="../compute_covar_DeltaSigma.html#compute_covar_DeltaSigma.supersample_pk">[docs]</a><span class="k">def</span> <span class="nf">supersample_pk</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">pk</span><span class="p">,</span> <span class="n">supersample_factor</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;supersample pk by cubic spline interpolation&quot;&quot;&quot;</span>
+	<span class="n">interpolator</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">interp1d</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">pk</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s1">&#39;cubic&#39;</span><span class="p">)</span>
+	<span class="n">newk</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logspace</span><span class="p">(</span>
+		<span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">k</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">k</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span> <span class="n">supersample_factor</span> <span class="o">*</span> <span class="n">k</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+	<span class="n">newpk</span> <span class="o">=</span> <span class="n">interpolator</span><span class="p">(</span><span class="n">newk</span><span class="p">)</span>
+	<span class="k">return</span> <span class="n">newk</span><span class="p">,</span> <span class="n">newpk</span></div>
+
+
+<div class="viewcode-block" id="extend_pk_range"><a class="viewcode-back" href="../compute_covar_DeltaSigma.html#compute_covar_DeltaSigma.extend_pk_range">[docs]</a><span class="k">def</span> <span class="nf">extend_pk_range</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">pk</span><span class="p">,</span> <span class="n">extended_kmax</span><span class="o">=</span><span class="mf">1.0e3</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;extend tabulated input power spectrum pk(k) to k_max using k^-3 asymptotic expansion&quot;&quot;&quot;</span>
+	<span class="n">kmin</span> <span class="o">=</span> <span class="n">k</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+	<span class="n">kmax</span> <span class="o">=</span> <span class="n">k</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+	<span class="n">log_krange</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">kmax</span> <span class="o">/</span> <span class="n">kmin</span><span class="p">)</span>
+	<span class="n">bins_per_log_k</span> <span class="o">=</span> <span class="n">k</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">log_krange</span>
+	<span class="n">asymp_log_krange</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">extended_kmax</span> <span class="o">/</span> <span class="n">kmax</span><span class="p">)</span>
+	<span class="n">asymp_k</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logspace</span><span class="p">(</span>
+		<span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">kmax</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">extended_kmax</span><span class="p">),</span>
+		<span class="nb">int</span><span class="p">(</span><span class="n">asymp_log_krange</span> <span class="o">*</span> <span class="n">bins_per_log_k</span><span class="p">))[</span><span class="mi">1</span><span class="p">:]</span>
+	<span class="n">asymp_pk</span> <span class="o">=</span> <span class="n">pk</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">asymp_k</span> <span class="o">/</span> <span class="n">kmax</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">3</span><span class="p">)</span>
+	<span class="n">extended_k</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">k</span><span class="p">,</span> <span class="n">asymp_k</span><span class="p">))</span>
+	<span class="n">extended_pk</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">pk</span><span class="p">,</span> <span class="n">asymp_pk</span><span class="p">))</span>
+	<span class="k">return</span> <span class="n">extended_k</span><span class="p">,</span> <span class="n">extended_pk</span></div>
+
+
+<div class="viewcode-block" id="supersample_and_extend_pk"><a class="viewcode-back" href="../compute_covar_DeltaSigma.html#compute_covar_DeltaSigma.supersample_and_extend_pk">[docs]</a><span class="k">def</span> <span class="nf">supersample_and_extend_pk</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">pk</span><span class="p">):</span>
+	<span class="n">this_k</span><span class="p">,</span> <span class="n">this_pk</span> <span class="o">=</span> <span class="n">supersample_pk</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">pk</span><span class="p">)</span>
+	<span class="k">return</span> <span class="n">extend_pk_range</span><span class="p">(</span><span class="n">this_k</span><span class="p">,</span> <span class="n">this_pk</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="survey_radius"><a class="viewcode-back" href="../compute_covar_DeltaSigma.html#compute_covar_DeltaSigma.survey_radius">[docs]</a><span class="k">def</span> <span class="nf">survey_radius</span><span class="p">(</span><span class="n">degrees_sq</span><span class="p">,</span> <span class="n">redshift</span><span class="p">,</span> <span class="n">Omega_m</span><span class="o">=</span><span class="mf">0.3</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;compute the comoving survey radius assuming a spherical cap survey of</span>
+<span class="sd">		&#39;degrees_sq&#39; square degrees on the sky at redshift &#39;redshift&#39;.&quot;&quot;&quot;</span>
+
+	<span class="n">sr</span> <span class="o">=</span> <span class="mf">4.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="p">(</span><span class="n">degrees_sq</span> <span class="o">/</span> <span class="mf">41253.</span><span class="p">)</span>	<span class="c1"># steradians</span>
+	<span class="n">R</span> <span class="o">=</span> <span class="n">comoving</span><span class="p">(</span><span class="n">redshift</span><span class="p">,</span> <span class="n">Omega_m</span><span class="o">=</span><span class="n">Omega_m</span><span class="p">)</span>
+	<span class="c1">#	area = sr * R**2</span>
+	<span class="c1">#	theta = np.arccos( 1.0 - (area / (2.0*np.pi*R**2)) )</span>
+	<span class="n">theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arccos</span><span class="p">(</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="p">(</span><span class="n">sr</span> <span class="o">/</span> <span class="p">(</span><span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">))</span> <span class="p">)</span>
+	<span class="n">R_survey</span> <span class="o">=</span> <span class="n">R</span><span class="o">*</span><span class="n">theta</span>
+
+	<span class="k">return</span> <span class="n">R_survey</span></div>
+
+
+<div class="viewcode-block" id="comoving"><a class="viewcode-back" href="../compute_covar_DeltaSigma.html#compute_covar_DeltaSigma.comoving">[docs]</a><span class="k">def</span> <span class="nf">comoving</span><span class="p">(</span><span class="n">redshift</span><span class="p">,</span> <span class="n">Omega_m</span><span class="o">=</span><span class="mf">0.3</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;compute comoving radial distance to redshift &#39;redshift&#39; in flat LCDM.&quot;&quot;&quot;</span>
+	<span class="n">norm_fac</span> <span class="o">=</span> <span class="mf">3000.0</span> <span class="c1"># Mpc/h</span>
+	<span class="n">E</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">z</span><span class="p">:</span> <span class="n">Omega_m</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">z</span><span class="p">)</span><span class="o">**</span><span class="mi">3</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">Omega_m</span><span class="p">)</span>	<span class="c1"># ignore radiation, neutrinos, etc.</span>
+	<span class="n">integrand</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">z</span><span class="p">:</span> <span class="mf">1.0</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">E</span><span class="p">(</span><span class="n">z</span><span class="p">))</span>
+	<span class="n">chi</span> <span class="o">=</span> <span class="n">norm_fac</span> <span class="o">*</span> <span class="n">integrate</span><span class="o">.</span><span class="n">quad</span><span class="p">(</span><span class="n">integrand</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="n">redshift</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>	<span class="c1"># Mpc/h units</span>
+	<span class="k">return</span> <span class="n">chi</span></div>
+
+
+<div class="viewcode-block" id="pi_lens"><a class="viewcode-back" href="../compute_covar_DeltaSigma.html#compute_covar_DeltaSigma.pi_lens">[docs]</a><span class="k">def</span> <span class="nf">pi_lens</span><span class="p">(</span><span class="n">z_lens</span><span class="p">,</span> <span class="n">z_source</span><span class="p">,</span> <span class="n">Omega_m</span><span class="o">=</span><span class="mf">0.3</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;compute pi_lens (eq. 18 in my notes) assuming a single source and single lens redshift.&quot;&quot;&quot;</span>
+	<span class="n">norm_fac</span> <span class="o">=</span> <span class="mf">3000.0</span> <span class="c1"># Mpc/h (comoving)</span>
+	<span class="n">sigma_crit_fid</span> <span class="o">=</span> <span class="n">sigma_crit</span><span class="p">(</span><span class="n">z_lens</span><span class="p">,</span> <span class="n">z_source</span><span class="p">,</span> <span class="n">Omega_m</span><span class="o">=</span><span class="n">Omega_m</span><span class="p">)</span>
+	<span class="n">E</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">z</span><span class="p">:</span> <span class="n">Omega_m</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">z</span><span class="p">)</span><span class="o">**</span><span class="mi">3</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">Omega_m</span><span class="p">)</span>	<span class="c1"># ignore radiation, neutrinos, etc.</span>
+	<span class="n">integrand</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">z</span><span class="p">:</span> <span class="p">(</span><span class="n">sigma_crit_fid</span> <span class="o">/</span> <span class="n">sigma_crit</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">z_source</span><span class="p">,</span> <span class="n">Omega_m</span><span class="o">=</span><span class="n">Omega_m</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> \
+							 <span class="n">E</span><span class="p">(</span><span class="n">z</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+	<span class="n">pi</span> <span class="o">=</span> <span class="n">norm_fac</span> <span class="o">*</span> <span class="n">integrate</span><span class="o">.</span><span class="n">quad</span><span class="p">(</span><span class="n">integrand</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="n">z_source</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+	<span class="k">return</span> <span class="n">pi</span></div>
+
+
+<div class="viewcode-block" id="window"><a class="viewcode-back" href="../compute_covar_DeltaSigma.html#compute_covar_DeltaSigma.window">[docs]</a><span class="k">def</span> <span class="nf">window</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">R</span><span class="o">=</span><span class="mf">1275.0</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;this is the window function for a circular survey of projected comoving radius R&quot;&quot;&quot;</span>
+	<span class="k">return</span> <span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">R</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">special</span><span class="o">.</span><span class="n">j1</span><span class="p">(</span><span class="n">k</span> <span class="o">*</span> <span class="n">R</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">k</span> <span class="o">*</span> <span class="n">R</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="lensing_signal"><a class="viewcode-back" href="../compute_covar_DeltaSigma.html#compute_covar_DeltaSigma.lensing_signal">[docs]</a><span class="k">def</span> <span class="nf">lensing_signal</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">pk_gm</span><span class="p">,</span> <span class="n">bins</span><span class="p">,</span> <span class="n">critical_density</span><span class="p">,</span> <span class="n">Omega_M</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">H_0</span><span class="o">=</span><span class="mf">100.</span><span class="p">,</span> <span class="n">gamma_t</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;compute the integral of bessel functions</span>
+<span class="sd">	over the galaxy power spectrum AND the matter power spectrum</span>
+<span class="sd">	to obtain the tangential excess shear signal.&quot;&quot;&quot;</span>
+
+	<span class="n">delta_sigma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">bins</span><span class="p">))</span>
+
+	<span class="c1"># compute mean_rho (comoving density units = Msun pc^-3)</span>
+	<span class="n">speed_of_light_km_s</span> <span class="o">=</span> <span class="mf">2.998e5</span>  <span class="c1"># km/s</span>
+	<span class="n">csq_over_G</span> <span class="o">=</span> <span class="mf">2.494e12</span>  <span class="c1"># 3c^2/(8*pi*G) Msun pc^-1</span>
+	<span class="n">mean_rho</span> <span class="o">=</span> <span class="n">Omega_M</span> <span class="o">*</span> <span class="n">csq_over_G</span> <span class="o">*</span> <span class="p">(</span><span class="n">H_0</span> <span class="o">/</span> <span class="n">speed_of_light_km_s</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="mf">1.0e12</span>
+
+	<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">dr</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bins</span><span class="p">):</span>
+		<span class="n">y2</span> <span class="o">=</span> <span class="n">k</span> <span class="o">/</span> <span class="p">(</span><span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">*</span> <span class="n">special</span><span class="o">.</span><span class="n">jn</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="n">k</span><span class="o">*</span><span class="n">r</span><span class="p">)</span> <span class="o">*</span> \
+		<span class="n">my_sinc</span><span class="p">(</span><span class="n">k</span><span class="o">*</span><span class="n">dr</span><span class="o">/</span><span class="mf">2.0</span><span class="p">)</span> <span class="o">*</span> \
+		<span class="p">(</span><span class="n">mean_rho</span><span class="o">*</span><span class="n">pk_gm</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1.0e6</span>
+		<span class="c1"># Mpc^-2 Msun pc^-3 Mpc^3 = Msun pc^-3 Mpc^3 Mpc^-2 = Msun pc^-3 Mpc (pc/Mpc)</span>
+		<span class="n">result2</span> <span class="o">=</span> <span class="n">integrate</span><span class="o">.</span><span class="n">simps</span><span class="p">(</span><span class="n">y2</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">k</span><span class="p">)</span>
+		<span class="n">delta_sigma</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">result2</span>
+
+<span class="c1">#	if gamma_t == True:</span>
+<span class="c1">#		gamma_t = delta_sigma / critical_density</span>
+<span class="c1">#		return gamma_t</span>
+		
+	<span class="k">return</span> <span class="n">delta_sigma</span></div>
+
+
+<div class="viewcode-block" id="lensing_covariance"><a class="viewcode-back" href="../compute_covar_DeltaSigma.html#compute_covar_DeltaSigma.lensing_covariance">[docs]</a><span class="k">def</span> <span class="nf">lensing_covariance</span><span class="p">(</span><span class="n">k</span><span class="p">,</span>
+					<span class="n">Pk_gm</span><span class="p">,</span>
+					<span class="n">Pk_gg</span><span class="p">,</span>
+					<span class="n">Pk_mm</span><span class="p">,</span>
+					<span class="n">bins</span><span class="p">,</span>
+					<span class="n">n_gal</span><span class="o">=</span><span class="mf">1.0e-3</span><span class="p">,</span>
+					<span class="n">Omega_M</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span>
+					<span class="n">H_0</span><span class="o">=</span><span class="mf">100.</span><span class="p">,</span>
+					<span class="n">L_W</span><span class="o">=</span><span class="mf">500.</span><span class="p">,</span>
+					<span class="n">DeltaPi</span><span class="o">=</span><span class="mf">400.</span><span class="p">,</span>
+					<span class="n">critical_density</span><span class="o">=</span><span class="mf">4.7e3</span><span class="p">,</span>
+					<span class="n">n_source</span><span class="o">=</span><span class="mf">8.0</span><span class="p">,</span>
+					<span class="n">shape_noise</span><span class="o">=</span><span class="mf">0.21</span><span class="p">,</span>
+					<span class="n">R</span><span class="o">=</span><span class="mf">1275.0</span><span class="p">,</span>
+					<span class="n">gamma_t</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+					
+	<span class="sd">&quot;&quot;&quot;compute the integral of Bessel functions</span>
+<span class="sd">	over the galaxy power spectrum AND the matter power spectrum:</span>
+<span class="sd">	int (dk k / 2pi) J_2(k r_p,i) J_2(k r_p,j) (P_gal(k) + 1/_ngal)(P_shear(k) + const.)&quot;&quot;&quot;</span>
+
+	<span class="n">cov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">bins</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">bins</span><span class="p">)))</span>
+	<span class="n">cov_nointrinsic</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">bins</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">bins</span><span class="p">)))</span>
+
+	<span class="c1">## compute mean_rho (comoving density units = Msun pc^-3)</span>
+	<span class="n">speed_of_light_km_s</span> <span class="o">=</span> <span class="mf">2.998e5</span>  <span class="c1"># km/s</span>
+	<span class="n">csq_over_G</span> <span class="o">=</span> <span class="mf">2.494e12</span>  <span class="c1"># 3c^2/(8*pi*G) Msun pc^-1</span>
+	<span class="n">mean_rho</span> <span class="o">=</span> <span class="n">Omega_M</span> <span class="o">*</span> <span class="n">csq_over_G</span> <span class="o">*</span> <span class="p">(</span>
+		<span class="n">H_0</span> <span class="o">/</span> <span class="n">speed_of_light_km_s</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="mf">1.0e12</span>  <span class="c1"># Msun pc^-3</span>
+
+
+	<span class="c1">## compute shape noise term (surface density: Msun pc^-2; shear signal: Msun pc^-2)</span>
+	<span class="c1"># z_lens = 0.27 # (unused) in the future, use this to compute the critical density</span>
+	<span class="c1"># L_W = 500. # h^-1 Mpc (the redshift range of the lenses)</span>
+	<span class="c1"># DeltaPi = 400. # h^-1 Mpc (approximately the redshift range of the lenses)</span>
+	<span class="c1"># critical_density = 4.7e3 # h Msun pc^-2</span>
+	<span class="c1"># n_source = 8.0 # h^2 Mpc^-2 (source galaxy projected number density)</span>
+	<span class="c1"># shear_responsivity = 0.85</span>
+	<span class="c1"># shape_noise = 0.36 / (2.0*shear_responsivity)</span>
+
+	<span class="n">shape_noise_term</span> <span class="o">=</span> <span class="n">critical_density</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">shape_noise</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="n">n_source</span><span class="p">)</span>
+						<span class="c1"># (Msun pc^-2)^2 Mpc^2</span>
+	
+	<span class="c1">## NOTE: this is an *approximate* form of the projected shear-shear power spectrum</span>
+	<span class="c1">## [see Singh+ 2017 eq. A34 for the &quot;exact&quot; (Limber-approximated) form.]</span>
+
+	<span class="n">shear_term</span> <span class="o">=</span> <span class="n">DeltaPi</span> <span class="o">*</span> <span class="n">mean_rho</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">Pk_mm</span> <span class="o">*</span> <span class="mf">1.0e12</span>
+						<span class="c1"># (Msun pc^-3)^2 Mpc^4 (pc/Mpc)^2</span>
+
+	<span class="c1">## split into &#39;simulation&#39; and &#39;LSS&#39; terms</span>
+
+	<span class="n">DeltaPi_sim</span> <span class="o">=</span> <span class="mf">200.</span> <span class="c1"># Mpc/h</span>
+	<span class="n">shear_sim</span> <span class="o">=</span> <span class="n">DeltaPi_sim</span> <span class="o">*</span> <span class="n">mean_rho</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">Pk_mm</span> <span class="o">*</span> <span class="mf">1.0e12</span>
+
+	<span class="n">DeltaPi_lss</span> <span class="o">=</span> <span class="p">(</span><span class="n">DeltaPi</span> <span class="o">-</span> <span class="n">DeltaPi_sim</span><span class="p">)</span>
+	<span class="n">shear_lss</span> <span class="o">=</span> <span class="n">DeltaPi_lss</span> <span class="o">*</span> <span class="n">mean_rho</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">Pk_mm</span> <span class="o">*</span> <span class="mf">1.0e12</span>
+	
+	<span class="c1"># = Msun^2 pc^-4 Mpc^2</span>
+	<span class="c1">#	(convert Mpc^2 -&gt; pc^2: Msun^2 pc^-6 pc^2 Mpc^2 = Msun^2 pc^-4 Mpc^2)</span>
+
+	<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">r_i</span><span class="p">,</span> <span class="n">dr_i</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bins</span><span class="p">):</span>
+		<span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="p">(</span><span class="n">r_j</span><span class="p">,</span> <span class="n">dr_j</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bins</span><span class="p">[:</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]):</span>
+		
+			<span class="c1"># compute shape noise part</span>
+			<span class="n">y0</span> <span class="o">=</span> <span class="n">k</span> <span class="o">/</span> <span class="p">(</span><span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">*</span> <span class="n">special</span><span class="o">.</span><span class="n">jn</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="n">k</span><span class="o">*</span><span class="n">r_i</span><span class="p">)</span> <span class="o">*</span> <span class="n">special</span><span class="o">.</span><span class="n">jn</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="n">k</span><span class="o">*</span><span class="n">r_j</span><span class="p">)</span> <span class="o">*</span> \
+					<span class="n">my_sinc</span><span class="p">(</span><span class="n">k</span><span class="o">*</span><span class="n">dr_i</span><span class="o">/</span><span class="mf">2.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">my_sinc</span><span class="p">(</span><span class="n">k</span><span class="o">*</span><span class="n">dr_j</span><span class="o">/</span><span class="mf">2.0</span><span class="p">)</span> <span class="o">*</span> \
+					<span class="p">(</span><span class="n">Pk_gg</span> <span class="o">+</span> <span class="mf">1.0</span><span class="o">/</span><span class="n">n_gal</span><span class="p">)</span> <span class="o">*</span> <span class="n">shape_noise_term</span>
+
+			<span class="n">shape</span> <span class="o">=</span> <span class="n">integrate</span><span class="o">.</span><span class="n">simps</span><span class="p">(</span><span class="n">y0</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">k</span><span class="p">)</span>
+
+			<span class="c1"># compute LSS part</span>
+			<span class="n">y1</span> <span class="o">=</span> <span class="n">k</span> <span class="o">/</span> <span class="p">(</span><span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">*</span> <span class="n">special</span><span class="o">.</span><span class="n">jn</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="n">k</span><span class="o">*</span><span class="n">r_i</span><span class="p">)</span> <span class="o">*</span> <span class="n">special</span><span class="o">.</span><span class="n">jn</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="n">k</span><span class="o">*</span><span class="n">r_j</span><span class="p">)</span> <span class="o">*</span> \
+					<span class="n">my_sinc</span><span class="p">(</span><span class="n">k</span><span class="o">*</span><span class="n">dr_i</span><span class="o">/</span><span class="mf">2.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">my_sinc</span><span class="p">(</span><span class="n">k</span><span class="o">*</span><span class="n">dr_j</span><span class="o">/</span><span class="mf">2.0</span><span class="p">)</span> <span class="o">*</span> \
+					<span class="p">(</span> <span class="p">(</span><span class="n">Pk_gg</span> <span class="o">+</span> <span class="mf">1.0</span><span class="o">/</span><span class="n">n_gal</span><span class="p">)</span><span class="o">*</span><span class="n">shear_lss</span> <span class="o">+</span> <span class="p">(</span><span class="n">mean_rho</span><span class="o">*</span><span class="n">Pk_gm</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">DeltaPi_lss</span><span class="o">*</span><span class="mf">1.0e12</span><span class="p">)</span> <span class="p">)</span>
+
+			<span class="n">lss</span> <span class="o">=</span> <span class="n">integrate</span><span class="o">.</span><span class="n">simps</span><span class="p">(</span><span class="n">y1</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">k</span><span class="p">)</span>
+
+			<span class="c1"># compute &#39;intrinsic&#39; part</span>
+			<span class="n">y2</span> <span class="o">=</span> <span class="n">k</span> <span class="o">/</span> <span class="p">(</span><span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">*</span> <span class="n">special</span><span class="o">.</span><span class="n">jn</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="n">k</span><span class="o">*</span><span class="n">r_i</span><span class="p">)</span> <span class="o">*</span> <span class="n">special</span><span class="o">.</span><span class="n">jn</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="n">k</span><span class="o">*</span><span class="n">r_j</span><span class="p">)</span> <span class="o">*</span> \
+					<span class="n">my_sinc</span><span class="p">(</span><span class="n">k</span><span class="o">*</span><span class="n">dr_i</span><span class="o">/</span><span class="mf">2.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">my_sinc</span><span class="p">(</span><span class="n">k</span><span class="o">*</span><span class="n">dr_j</span><span class="o">/</span><span class="mf">2.0</span><span class="p">)</span> <span class="o">*</span> \
+					<span class="p">(</span> <span class="p">(</span><span class="n">Pk_gg</span> <span class="o">+</span> <span class="mf">1.0</span><span class="o">/</span><span class="n">n_gal</span><span class="p">)</span><span class="o">*</span><span class="n">shear_sim</span> <span class="o">+</span> <span class="p">(</span><span class="n">mean_rho</span><span class="o">*</span><span class="n">Pk_gm</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">DeltaPi_sim</span><span class="o">*</span><span class="mf">1.0e12</span><span class="p">)</span> <span class="p">)</span>
+
+			<span class="c1"># Mpc^-3 Mpc^-2 Mpc^6 Msun^2 pc^-6 Mpc = Mpc^2 Msun^2 pc^-6 = Msun^2 pc^-4 * 1.0e12</span>
+
+			<span class="n">intrinsic</span> <span class="o">=</span> <span class="n">integrate</span><span class="o">.</span><span class="n">simps</span><span class="p">(</span><span class="n">y2</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">k</span><span class="p">)</span>
+
+			<span class="c1"># compute survey window effects on effective volume</span>
+			<span class="n">norm_ij</span> <span class="o">=</span> <span class="n">k</span> <span class="o">/</span> <span class="p">(</span><span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">*</span> <span class="n">special</span><span class="o">.</span><span class="n">j0</span><span class="p">(</span><span class="n">k</span><span class="o">*</span><span class="n">r_i</span><span class="p">)</span> <span class="o">*</span> <span class="n">special</span><span class="o">.</span><span class="n">j0</span><span class="p">(</span><span class="n">k</span><span class="o">*</span><span class="n">r_j</span><span class="p">)</span> <span class="o">*</span>\
+						<span class="n">my_sinc</span><span class="p">(</span><span class="n">k</span><span class="o">*</span><span class="n">dr_i</span><span class="o">/</span><span class="mf">2.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">my_sinc</span><span class="p">(</span><span class="n">k</span><span class="o">*</span><span class="n">dr_j</span><span class="o">/</span><span class="mf">2.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">window</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">R</span><span class="o">=</span><span class="n">R</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span>
+			<span class="n">norm_i</span> <span class="o">=</span> <span class="n">k</span> <span class="o">/</span> <span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">*</span> <span class="n">special</span><span class="o">.</span><span class="n">j0</span><span class="p">(</span><span class="n">k</span> <span class="o">*</span> <span class="n">r_i</span><span class="p">)</span> <span class="o">*</span>\
+						<span class="n">my_sinc</span><span class="p">(</span><span class="n">k</span> <span class="o">*</span> <span class="n">dr_i</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">window</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">R</span><span class="o">=</span><span class="n">R</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span>
+			<span class="n">norm_j</span> <span class="o">=</span> <span class="n">k</span> <span class="o">/</span> <span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">*</span> <span class="n">special</span><span class="o">.</span><span class="n">j0</span><span class="p">(</span><span class="n">k</span> <span class="o">*</span> <span class="n">r_j</span><span class="p">)</span> <span class="o">*</span>\
+						<span class="n">my_sinc</span><span class="p">(</span><span class="n">k</span> <span class="o">*</span> <span class="n">dr_j</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">window</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">R</span><span class="o">=</span><span class="n">R</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span>
+			
+			<span class="n">V_ij</span> <span class="o">=</span> <span class="n">integrate</span><span class="o">.</span><span class="n">simps</span><span class="p">(</span><span class="n">norm_ij</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">k</span><span class="p">)</span> <span class="o">*</span> <span class="n">L_W</span>
+			<span class="n">V_i</span> <span class="o">=</span> <span class="n">integrate</span><span class="o">.</span><span class="n">simps</span><span class="p">(</span><span class="n">norm_i</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">k</span><span class="p">)</span> <span class="o">*</span> <span class="n">L_W</span>
+			<span class="n">V_j</span> <span class="o">=</span> <span class="n">integrate</span><span class="o">.</span><span class="n">simps</span><span class="p">(</span><span class="n">norm_j</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">k</span><span class="p">)</span> <span class="o">*</span> <span class="n">L_W</span>
+			<span class="n">V_eff</span> <span class="o">=</span> <span class="p">(</span><span class="n">V_i</span> <span class="o">*</span> <span class="n">V_j</span><span class="p">)</span> <span class="o">/</span> <span class="n">V_ij</span>
+
+			<span class="n">cov</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">shape</span> <span class="o">+</span> <span class="n">lss</span> <span class="o">+</span> <span class="n">intrinsic</span><span class="p">)</span> <span class="o">/</span> <span class="n">V_eff</span>
+			<span class="n">cov_nointrinsic</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">shape</span> <span class="o">+</span> <span class="n">lss</span><span class="p">)</span> <span class="o">/</span> <span class="n">V_eff</span>
+
+			<span class="n">cov</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">cov</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+			<span class="n">cov_nointrinsic</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">cov_nointrinsic</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+
+<span class="c1">#	if gamma_t == True:</span>
+<span class="c1">#		cov /= critical_density**2		# compute cov_{\gamma_t}</span>
+
+	<span class="k">return</span> <span class="n">cov</span><span class="p">,</span> <span class="n">cov_nointrinsic</span></div>
+
+
+<div class="viewcode-block" id="cleaned_precision_matrix"><a class="viewcode-back" href="../compute_covar_DeltaSigma.html#compute_covar_DeltaSigma.cleaned_precision_matrix">[docs]</a><span class="k">def</span> <span class="nf">cleaned_precision_matrix</span><span class="p">(</span><span class="n">cov</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;zero-out noisy modes&quot;&quot;&quot;</span>
+	<span class="n">U</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">V</span> <span class="o">=</span> <span class="n">linalg</span><span class="o">.</span><span class="n">svd</span><span class="p">(</span><span class="n">cov</span><span class="p">,</span> <span class="n">full_matrices</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+	<span class="n">S</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+	<span class="n">S_inv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">/</span> <span class="n">s</span><span class="p">)</span>
+	<span class="n">noise_threshold_inv</span> <span class="o">=</span> <span class="mf">1.0e6</span>  <span class="c1"># singular value threshold</span>
+	<span class="n">noise_threshold</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">noise_threshold_inv</span>
+	<span class="n">S_inv</span><span class="p">[</span><span class="n">S_inv</span> <span class="o">&gt;=</span> <span class="n">noise_threshold_inv</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.</span>
+	<span class="n">S</span><span class="p">[</span><span class="n">S</span> <span class="o">&lt;=</span> <span class="n">noise_threshold</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.</span>
+	<span class="n">cov_inv_clean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">U</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">S_inv</span><span class="p">,</span> <span class="n">V</span><span class="p">))</span>
+	<span class="n">cov_clean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">U</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">S</span><span class="p">,</span> <span class="n">V</span><span class="p">))</span>
+	<span class="k">return</span> <span class="n">cov_clean</span><span class="p">,</span> <span class="n">cov_inv_clean</span></div>
+
+
+<div class="viewcode-block" id="compute_signal_to_noise"><a class="viewcode-back" href="../compute_covar_DeltaSigma.html#compute_covar_DeltaSigma.compute_signal_to_noise">[docs]</a><span class="k">def</span> <span class="nf">compute_signal_to_noise</span><span class="p">(</span><span class="n">cov</span><span class="p">,</span> <span class="n">signal</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;compute the signal-to-noise for the fiducial case.&quot;&quot;&quot;</span>
+	<span class="n">SN</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">signal</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">cov</span><span class="p">),</span> <span class="n">signal</span><span class="p">)))</span>
+	<span class="k">return</span> <span class="n">SN</span></div>
+
+
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../compute_covar_DeltaSigma.html#compute_covar_DeltaSigma.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">parameter_file</span><span class="p">,</span> <span class="n">pk_gg_filename</span><span class="p">,</span> <span class="n">pk_gm_filename</span><span class="p">,</span> <span class="n">pk_mm_filename</span><span class="p">,</span>
+		<span class="n">output_lensing_filename</span><span class="p">,</span> <span class="n">output_lensing_precision</span><span class="p">,</span>
+		<span class="n">output_lensing_signal</span><span class="p">,</span> <span class="n">output_lensing_nointrinsic_filename</span><span class="p">,</span> <span class="n">gamma_t</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+	<span class="n">k_gg_in</span><span class="p">,</span> <span class="n">pk_gg_in</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">pk_gg_filename</span><span class="p">,</span> <span class="n">unpack</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+	<span class="n">k_gm_in</span><span class="p">,</span> <span class="n">pk_gm_in</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">pk_gm_filename</span><span class="p">,</span> <span class="n">unpack</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+	<span class="n">k_mm_in</span><span class="p">,</span> <span class="n">pk_mm_in</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">pk_mm_filename</span><span class="p">,</span> <span class="n">unpack</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+	<span class="n">k_gg</span><span class="p">,</span> <span class="n">pk_gg</span> <span class="o">=</span> <span class="n">supersample_and_extend_pk</span><span class="p">(</span><span class="n">k_gg_in</span><span class="p">,</span> <span class="n">pk_gg_in</span><span class="p">)</span>
+	<span class="n">k_gm</span><span class="p">,</span> <span class="n">pk_gm</span> <span class="o">=</span> <span class="n">supersample_and_extend_pk</span><span class="p">(</span><span class="n">k_gm_in</span><span class="p">,</span> <span class="n">pk_gm_in</span><span class="p">)</span>
+	<span class="n">k_mm</span><span class="p">,</span> <span class="n">pk_mm</span> <span class="o">=</span> <span class="n">supersample_and_extend_pk</span><span class="p">(</span><span class="n">k_mm_in</span><span class="p">,</span> <span class="n">pk_mm_in</span><span class="p">)</span>
+
+
+	<span class="c1">## load parameters</span>
+	
+	<span class="n">myparser</span> <span class="o">=</span> <span class="n">configparser</span><span class="o">.</span><span class="n">ConfigParser</span><span class="p">()</span>
+	<span class="n">myparser</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">parameter_file</span><span class="p">)</span>
+	<span class="n">params</span> <span class="o">=</span> <span class="n">myparser</span><span class="p">[</span><span class="s1">&#39;params&#39;</span><span class="p">]</span>
+	
+	<span class="n">n_gal</span> 				<span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;n_gal&#39;</span><span class="p">])</span>
+	<span class="n">Omega_M</span> 			<span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;Omega_M&#39;</span><span class="p">])</span>
+	<span class="n">L_W</span> 				<span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;L_W&#39;</span><span class="p">])</span>
+	<span class="n">DeltaPi</span> 			<span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;DeltaPi&#39;</span><span class="p">])</span>
+	<span class="n">critical_density</span> 	<span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;critical_density&#39;</span><span class="p">])</span>
+	<span class="n">n_source</span> 			<span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;n_source&#39;</span><span class="p">])</span>
+	<span class="n">shape_noise</span> 		<span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;shape_noise&#39;</span><span class="p">])</span>
+	<span class="n">R</span> 					<span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;R_survey&#39;</span><span class="p">])</span>
+
+
+	<span class="c1">## scale-restriction parameters</span>
+	
+	<span class="n">rp_min</span> <span class="o">=</span> <span class="mf">0.</span>
+	<span class="n">rp_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+	<span class="n">do_rescale</span> <span class="o">=</span> <span class="s1">&#39;False&#39;</span>
+	<span class="n">rp_min_fiducial</span> <span class="o">=</span> <span class="mf">0.</span>
+	
+	<span class="k">if</span> <span class="s1">&#39;DS_rp_min&#39;</span> <span class="ow">in</span> <span class="n">params</span><span class="p">:</span>
+		<span class="n">rp_min</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;DS_rp_min&#39;</span><span class="p">])</span>
+	<span class="k">if</span> <span class="s1">&#39;DS_rp_max&#39;</span> <span class="ow">in</span> <span class="n">params</span><span class="p">:</span>
+		<span class="n">rp_max</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;DS_rp_max&#39;</span><span class="p">])</span>
+	<span class="k">if</span> <span class="s1">&#39;DS_do_rescale&#39;</span> <span class="ow">in</span> <span class="n">params</span><span class="p">:</span>
+		<span class="n">do_rescale</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;DS_do_rescale&#39;</span><span class="p">]</span>
+		<span class="n">rp_min_fiducial</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;DS_rp_min_fiducial&#39;</span><span class="p">])</span>
+
+
+	<span class="c1">## lensing covariance</span>
+	
+	<span class="n">projected_rmin</span> <span class="o">=</span> <span class="mf">0.5</span>
+	<span class="n">projected_rmax</span> <span class="o">=</span> <span class="mf">30.0</span>
+	<span class="n">projected_nbins</span> <span class="o">=</span> <span class="mi">30</span>
+	
+	<span class="k">if</span> <span class="s1">&#39;projected_rmin&#39;</span> <span class="ow">in</span> <span class="n">params</span><span class="p">:</span>
+		<span class="n">projected_rmin</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;projected_rmin&#39;</span><span class="p">])</span>
+	<span class="k">if</span> <span class="s1">&#39;projected_rmax&#39;</span> <span class="ow">in</span> <span class="n">params</span><span class="p">:</span>
+		<span class="n">projected_rmax</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;projected_rmax&#39;</span><span class="p">])</span>
+	<span class="k">if</span> <span class="s1">&#39;projected_nbins&#39;</span> <span class="ow">in</span> <span class="n">params</span><span class="p">:</span>
+		<span class="n">projected_nbins</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;projected_nbins&#39;</span><span class="p">])</span>
+
+	<span class="n">bins</span> <span class="o">=</span> <span class="n">measurement_bins</span><span class="p">(</span>
+		<span class="n">rmin</span><span class="o">=</span><span class="n">projected_rmin</span><span class="p">,</span> <span class="n">rmax</span><span class="o">=</span><span class="n">projected_rmax</span><span class="p">,</span> <span class="n">nbins</span><span class="o">=</span><span class="n">projected_nbins</span><span class="p">)</span>
+		
+	<span class="n">lens_cov</span><span class="p">,</span> <span class="n">lens_cov_nointrinsic</span> <span class="o">=</span> <span class="n">lensing_covariance</span><span class="p">(</span>
+		<span class="n">k_gm</span><span class="p">,</span>
+		<span class="n">pk_gm</span><span class="p">,</span>
+		<span class="n">pk_gg</span><span class="p">,</span>
+		<span class="n">pk_mm</span><span class="p">,</span>
+		<span class="n">bins</span><span class="p">,</span>
+		<span class="n">n_gal</span><span class="o">=</span><span class="n">n_gal</span><span class="p">,</span>
+		<span class="n">Omega_M</span><span class="o">=</span><span class="n">Omega_M</span><span class="p">,</span>
+		<span class="n">L_W</span><span class="o">=</span><span class="n">L_W</span><span class="p">,</span>
+		<span class="n">DeltaPi</span><span class="o">=</span><span class="n">DeltaPi</span><span class="p">,</span>
+		<span class="n">critical_density</span><span class="o">=</span><span class="n">critical_density</span><span class="p">,</span>
+		<span class="n">n_source</span><span class="o">=</span><span class="n">n_source</span><span class="p">,</span>
+		<span class="n">shape_noise</span><span class="o">=</span><span class="n">shape_noise</span><span class="p">,</span>
+		<span class="n">R</span><span class="o">=</span><span class="n">R</span><span class="p">,</span>
+		<span class="n">gamma_t</span><span class="o">=</span><span class="n">gamma_t</span><span class="p">)</span>
+		
+	<span class="n">delta_sigma</span> <span class="o">=</span> <span class="n">lensing_signal</span><span class="p">(</span>
+		<span class="n">k_gm</span><span class="p">,</span> <span class="n">pk_gm</span><span class="p">,</span> <span class="n">bins</span><span class="p">,</span> <span class="n">critical_density</span><span class="p">,</span> <span class="n">Omega_M</span><span class="o">=</span><span class="n">Omega_M</span><span class="p">,</span> <span class="n">gamma_t</span><span class="o">=</span><span class="n">gamma_t</span><span class="p">)</span>
+
+
+	<span class="c1">## compute SN_rescaled from restricting cov to DS_rp_min_rescale &lt; rp &lt; np.inf</span>
+	
+	<span class="n">cov_fiducial_scales</span><span class="p">,</span> <span class="n">DS_fiducial_scales</span> <span class="o">=</span> <span class="n">cov_signal_restrict_scales</span><span class="p">(</span>
+		<span class="n">lens_cov</span><span class="p">,</span> <span class="n">delta_sigma</span><span class="p">,</span> <span class="n">bins</span><span class="p">,</span> <span class="n">rp_min</span><span class="o">=</span><span class="n">rp_min_fiducial</span><span class="p">)</span>
+	<span class="n">SN_fiducial_scales</span> <span class="o">=</span> <span class="n">compute_signal_to_noise</span><span class="p">(</span><span class="n">cov_fiducial_scales</span><span class="p">,</span>
+												<span class="n">DS_fiducial_scales</span><span class="p">)</span>
+												
+	<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">signal-to-noise (fiducial scales): </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">SN_fiducial_scales</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+
+	<span class="n">bin_centers</span><span class="p">,</span> <span class="n">bin_widths</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">bins</span><span class="p">)</span>
+	
+	<span class="k">if</span> <span class="s1">&#39;DS_rp_min&#39;</span> <span class="ow">in</span> <span class="n">params</span> <span class="ow">or</span> <span class="s1">&#39;DS_rp_max&#39;</span> <span class="ow">in</span> <span class="n">params</span><span class="p">:</span>
+		<span class="n">cov_mask</span><span class="p">,</span> <span class="n">delta_sigma_mask</span> <span class="o">=</span> <span class="n">cov_signal_restrict_scales</span><span class="p">(</span>
+			<span class="n">lens_cov</span><span class="p">,</span> <span class="n">delta_sigma</span><span class="p">,</span> <span class="n">bins</span><span class="p">,</span> <span class="n">rp_min</span><span class="o">=</span><span class="n">rp_min</span><span class="p">,</span> <span class="n">rp_max</span><span class="o">=</span><span class="n">rp_max</span><span class="p">)</span>
+		<span class="n">SN_mask</span> <span class="o">=</span> <span class="n">compute_signal_to_noise</span><span class="p">(</span><span class="n">cov_mask</span><span class="p">,</span> <span class="n">delta_sigma_mask</span><span class="p">)</span>
+		<span class="nb">print</span><span class="p">(</span>
+			<span class="s1">&#39;</span><span class="se">\t</span><span class="s1">signal-to-noise (scale-restricted): </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">SN_mask</span><span class="p">,</span>
+			<span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+
+	<span class="k">if</span> <span class="n">do_rescale</span> <span class="o">==</span> <span class="s1">&#39;True&#39;</span><span class="p">:</span>
+		<span class="n">rescale_factor</span> <span class="o">=</span> <span class="p">(</span><span class="n">SN_mask</span> <span class="o">/</span> <span class="n">SN_fiducial_scales</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span>
+		<span class="n">lens_cov</span> <span class="o">*=</span> <span class="n">rescale_factor</span>
+		<span class="n">cov_mask</span> <span class="o">*=</span> <span class="n">rescale_factor</span>
+		<span class="nb">print</span><span class="p">(</span>
+			<span class="s1">&#39;</span><span class="se">\t</span><span class="s1">signal-to-noise (rescaled): </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">compute_signal_to_noise</span><span class="p">(</span>
+				<span class="n">cov_mask</span><span class="p">,</span> <span class="n">delta_sigma_mask</span><span class="p">),</span>
+			<span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+
+	<span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="n">output_lensing_filename</span><span class="p">,</span> <span class="n">lens_cov</span><span class="p">)</span>
+
+	<span class="k">if</span> <span class="n">output_lensing_nointrinsic_filename</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+		<span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;nointrinsic signal-to-noise (all scales): {compute_signal_to_noise(lens_cov_nointrinsic, delta_sigma)}&quot;</span><span class="p">)</span>
+		<span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="n">output_lensing_nointrinsic_filename</span><span class="p">,</span> <span class="n">lens_cov_nointrinsic</span><span class="p">)</span>
+	
+	<span class="k">if</span> <span class="n">output_lensing_precision</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+		<span class="n">lens_cov_clean</span><span class="p">,</span> <span class="n">lens_cov_inv_clean</span> <span class="o">=</span> <span class="n">cleaned_precision_matrix</span><span class="p">(</span><span class="n">lens_cov</span><span class="p">)</span>
+		<span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="n">output_lensing_precision</span><span class="p">,</span> <span class="n">lens_cov_inv_clean</span><span class="p">)</span>
+	
+	<span class="k">if</span> <span class="n">output_lensing_signal</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+		<span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="n">output_lensing_signal</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">c_</span><span class="p">[</span><span class="n">bin_centers</span><span class="p">,</span> <span class="n">delta_sigma</span><span class="p">])</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+
+	<span class="kn">import</span> <span class="nn">argparse</span>
+	<span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+	
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;parameter_file&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;parmeter filename&#39;</span><span class="p">)</span>
+	
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+		<span class="s1">&#39;pk_gg_filename&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;name of ASCII input matter power spectrum&#39;</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+		<span class="s1">&#39;pk_gm_filename&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;name of ASCII input matter power spectrum&#39;</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+		<span class="s1">&#39;pk_mm_filename&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;name of ASCII input matter power spectrum&#39;</span><span class="p">)</span>
+		
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;output_lensing_covariance&#39;</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--output-lensing-precision&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--output-lensing-signal&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--output-cov-nointrinsic&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+	
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--gamma_t&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">bool</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;compute gamma_t&#39;</span><span class="p">)</span>
+	
+	<span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+	<span class="n">main</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">parameter_file</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">pk_gg_filename</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">pk_gm_filename</span><span class="p">,</span>
+		<span class="n">args</span><span class="o">.</span><span class="n">pk_mm_filename</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">output_lensing_covariance</span><span class="p">,</span>
+		<span class="n">args</span><span class="o">.</span><span class="n">output_lensing_precision</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">output_lensing_signal</span><span class="p">,</span>
+		<span class="n">args</span><span class="o">.</span><span class="n">output_cov_nointrinsic</span><span class="p">,</span>
+		<span class="n">gamma_t</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">gamma_t</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Ben Wibking
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,1110 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>compute_hod_old &mdash; ACME Emulator  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> ACME Emulator
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ACME Emulator</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">Module code</a> &raquo;</li>
+        
+      <li>compute_hod_old</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for compute_hod_old</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+<span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">scipy.optimize</span>
+<span class="kn">import</span> <span class="nn">scipy.integrate</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">configparser</span>
+<span class="kn">from</span> <span class="nn">numba</span> <span class="k">import</span> <span class="n">jit</span>
+<span class="kn">from</span> <span class="nn">compute_sigma8</span> <span class="k">import</span> <span class="n">growth_factor</span>
+<span class="kn">from</span> <span class="nn">scipy.integrate</span> <span class="k">import</span> <span class="n">simps</span> <span class="k">as</span> <span class="n">simpson</span>
+
+
+<span class="n">delta_c</span> <span class="o">=</span> <span class="mf">1.686</span>
+<span class="n">Delta_vir</span> <span class="o">=</span> <span class="mf">200.</span>
+
+<span class="n">Mpc_to_cm</span> <span class="o">=</span> <span class="mf">3.0856e24</span> <span class="c1"># Conversion factor from Mpc to cm</span>
+<span class="n">Msun_to_g</span> <span class="o">=</span> <span class="mf">1.989e33</span> <span class="c1"># Conversion factor from Msun to grams</span>
+<span class="n">G</span> <span class="o">=</span> <span class="mf">6.672e-8</span> <span class="c1"># Universal Gravitational Constant in cgs units</span>
+<span class="n">Hubble</span> <span class="o">=</span> <span class="mf">3.2407789e-18</span> <span class="c1"># Hubble&#39;s constant h/sec</span>
+<span class="n">rho_crit</span> <span class="o">=</span> <span class="p">(</span><span class="mf">3.0</span><span class="o">*</span><span class="n">Hubble</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="mf">8.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">G</span><span class="p">))</span> <span class="o">*</span> <span class="p">(</span><span class="n">Mpc_to_cm</span><span class="o">**</span><span class="mi">3</span> <span class="o">/</span> <span class="n">Msun_to_g</span><span class="p">)</span> <span class="c1"># Msun h^2 / Mpc^3</span>
+
+
+<div class="viewcode-block" id="camb_linear_pk"><a class="viewcode-back" href="../compute_hod_old.html#compute_hod_old.camb_linear_pk">[docs]</a><span class="k">def</span> <span class="nf">camb_linear_pk</span><span class="p">(</span><span class="n">omch2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ombh2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sigma8</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">H0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">w0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ns</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+				<span class="n">redshift</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+	<span class="kn">import</span> <span class="nn">camb</span>
+
+	<span class="n">camb_params</span> <span class="o">=</span> <span class="n">camb</span><span class="o">.</span><span class="n">CAMBparams</span><span class="p">()</span>
+	<span class="n">camb_params</span><span class="o">.</span><span class="n">set_cosmology</span><span class="p">(</span><span class="n">H0</span><span class="o">=</span><span class="n">H0</span><span class="p">,</span> <span class="n">ombh2</span><span class="o">=</span><span class="n">ombh2</span><span class="p">,</span> <span class="n">omch2</span><span class="o">=</span><span class="n">omch2</span><span class="p">,</span> <span class="n">mnu</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+	<span class="n">camb_params</span><span class="o">.</span><span class="n">set_dark_energy</span><span class="p">(</span><span class="n">w</span><span class="o">=</span><span class="n">w0</span><span class="p">)</span>
+	<span class="n">camb_params</span><span class="o">.</span><span class="n">InitPower</span><span class="o">.</span><span class="n">set_params</span><span class="p">(</span><span class="n">ns</span><span class="o">=</span><span class="n">ns</span><span class="p">,</span> <span class="n">As</span><span class="o">=</span><span class="mf">2.1e-9</span><span class="p">)</span>
+	<span class="n">camb_params</span><span class="o">.</span><span class="n">set_matter_power</span><span class="p">(</span><span class="n">redshifts</span><span class="o">=</span><span class="p">[</span><span class="mf">0.</span><span class="p">],</span> <span class="n">kmax</span><span class="o">=</span><span class="mf">1e3</span><span class="p">)</span>
+	<span class="n">camb_params</span><span class="o">.</span><span class="n">NonLinear</span> <span class="o">=</span> <span class="n">camb</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">NonLinear_none</span>
+	<span class="c1">#camb_params.NonLinear = camb.model.NonLinear_pk</span>
+	<span class="n">results</span> <span class="o">=</span> <span class="n">camb</span><span class="o">.</span><span class="n">get_results</span><span class="p">(</span><span class="n">camb_params</span><span class="p">)</span>
+
+	<span class="n">k</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">pk</span> <span class="o">=</span> <span class="n">results</span><span class="o">.</span><span class="n">get_matter_power_spectrum</span><span class="p">(</span><span class="n">minkh</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span> <span class="n">maxkh</span><span class="o">=</span><span class="mf">200.</span><span class="p">,</span> <span class="n">npoints</span><span class="o">=</span><span class="mi">2048</span><span class="p">)</span>
+	<span class="n">P</span> <span class="o">=</span> <span class="n">pk</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]</span>
+
+	<span class="c1"># rescale P(k) according to D(z) and fix any normalization problems in input P(k)</span>
+	<span class="n">input_sigma_8</span> <span class="o">=</span> <span class="n">sigma_R</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">R</span><span class="o">=</span><span class="mf">8.0</span><span class="p">)</span>
+	<span class="n">h</span> <span class="o">=</span> <span class="n">H0</span><span class="o">/</span><span class="mf">100.</span>
+	<span class="n">omega_m</span> <span class="o">=</span> <span class="p">(</span><span class="n">omch2</span><span class="o">+</span><span class="n">ombh2</span><span class="p">)</span><span class="o">/</span><span class="n">h</span><span class="o">**</span><span class="mi">2</span>
+	<span class="n">growth_factor_at_redshift</span> <span class="o">=</span> <span class="n">growth_factor</span><span class="p">(</span><span class="n">redshift</span><span class="o">=</span><span class="n">redshift</span><span class="p">,</span> <span class="n">omega_m</span><span class="o">=</span><span class="n">omega_m</span><span class="p">)</span>
+	<span class="n">rescale_factor</span> <span class="o">=</span> <span class="p">(</span><span class="n">growth_factor_at_redshift</span> <span class="o">*</span> <span class="n">sigma8</span> <span class="o">/</span> <span class="n">input_sigma_8</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span>
+	<span class="n">P</span> <span class="o">*=</span> <span class="n">rescale_factor</span>
+
+	<span class="k">return</span> <span class="n">k</span><span class="p">,</span> <span class="n">P</span></div>
+
+
+<div class="viewcode-block" id="W"><a class="viewcode-back" href="../compute_hod_old.html#compute_hod_old.W">[docs]</a><span class="k">def</span> <span class="nf">W</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">r</span><span class="p">):</span>
+	<span class="k">return</span> <span class="mf">3.0</span><span class="o">*</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">k</span><span class="o">*</span><span class="n">r</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">k</span><span class="o">*</span><span class="n">r</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">k</span><span class="o">*</span><span class="n">r</span><span class="p">)</span> <span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">k</span><span class="o">*</span><span class="n">r</span><span class="p">)</span><span class="o">**</span><span class="mi">3</span></div>
+	
+
+<div class="viewcode-block" id="sigma_R"><a class="viewcode-back" href="../compute_hod_old.html#compute_hod_old.sigma_R">[docs]</a><span class="k">def</span> <span class="nf">sigma_R</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">R</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;compute rms variance of overdensity in spheres of radius R (Mpc h^-1).&quot;&quot;&quot;</span>
+	<span class="n">integrand</span> <span class="o">=</span> <span class="n">P</span> <span class="o">*</span> <span class="n">k</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">W</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">R</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+	<span class="n">this_sigma_R</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">simpson</span><span class="p">(</span><span class="n">integrand</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">k</span><span class="p">))</span>
+	<span class="k">return</span> <span class="n">this_sigma_R</span></div>
+
+
+<div class="viewcode-block" id="sigma_M"><a class="viewcode-back" href="../compute_hod_old.html#compute_hod_old.sigma_M">[docs]</a><span class="k">def</span> <span class="nf">sigma_M</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">Omega_M</span><span class="p">):</span>
+	<span class="n">mean_rho</span> <span class="o">=</span> <span class="p">(</span><span class="n">rho_crit</span><span class="o">*</span><span class="n">Omega_M</span><span class="p">)</span> <span class="c1"># in comoving units</span>
+	<span class="n">R</span> <span class="o">=</span> <span class="p">((</span><span class="mf">3.0</span> <span class="o">*</span> <span class="n">M</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mf">4.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">mean_rho</span><span class="p">))</span><span class="o">**</span><span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="mf">3.</span><span class="p">)</span>	<span class="c1"># no delta_vir</span>
+	<span class="k">return</span> <span class="n">sigma_R</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">R</span><span class="o">=</span><span class="n">R</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Rvir"><a class="viewcode-back" href="../compute_hod_old.html#compute_hod_old.Rvir">[docs]</a><span class="k">def</span> <span class="nf">Rvir</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">Omega_M</span><span class="p">):</span>
+	<span class="n">mean_rho</span> <span class="o">=</span> <span class="p">(</span><span class="n">rho_crit</span><span class="o">*</span><span class="n">Omega_M</span><span class="p">)</span> <span class="c1"># in comoving units</span>
+	<span class="k">return</span> <span class="p">((</span><span class="mf">3.0</span> <span class="o">*</span> <span class="n">M</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mf">4.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">Delta_vir</span><span class="o">*</span><span class="n">mean_rho</span><span class="p">))</span><span class="o">**</span><span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="mf">3.</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="dln_sigma_inv_dM"><a class="viewcode-back" href="../compute_hod_old.html#compute_hod_old.dln_sigma_inv_dM">[docs]</a><span class="k">def</span> <span class="nf">dln_sigma_inv_dM</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">M</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">Omega_M</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;compute d ln sigma^-1 / dM analytically.&quot;&quot;&quot;</span>
+
+	<span class="n">mean_rho</span> <span class="o">=</span> <span class="p">(</span><span class="n">rho_crit</span><span class="o">*</span><span class="n">Omega_M</span><span class="p">)</span> <span class="c1"># in comoving units</span>
+
+	<span class="k">def</span> <span class="nf">dW_dM</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">R</span><span class="p">):</span>
+		<span class="n">x</span> <span class="o">=</span> <span class="n">k</span> <span class="o">*</span> <span class="n">R</span>
+		<span class="c1"># no Delta_vir</span>
+		<span class="k">return</span> <span class="n">k</span> <span class="o">*</span> <span class="n">M</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mf">2.</span><span class="o">/</span><span class="mf">3.</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">3.0</span><span class="o">/</span><span class="p">(</span><span class="mf">4.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">mean_rho</span><span class="p">))</span><span class="o">**</span><span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="mf">3.</span><span class="p">)</span> <span class="o">*</span> \
+					<span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">/</span><span class="n">x</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="mf">3.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">/</span><span class="n">x</span><span class="o">**</span><span class="mi">3</span> <span class="o">-</span> <span class="mf">3.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">/</span><span class="n">x</span><span class="o">**</span><span class="mi">4</span><span class="p">)</span>
+
+	<span class="n">R</span> <span class="o">=</span> <span class="p">((</span><span class="mf">3.0</span> <span class="o">*</span> <span class="n">M</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mf">4.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">mean_rho</span><span class="p">))</span><span class="o">**</span><span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="mf">3.</span><span class="p">)</span> <span class="c1"># no Delta_vir</span>
+	<span class="n">integrand</span> <span class="o">=</span> <span class="n">P</span> <span class="o">*</span> <span class="n">k</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">W</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">R</span><span class="p">)</span> <span class="o">*</span> <span class="n">dW_dM</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">R</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+
+	<span class="n">this_dln_sigma_R_inv_dM</span> <span class="o">=</span> <span class="n">simpson</span><span class="p">(</span><span class="n">integrand</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">k</span><span class="p">)</span>
+
+	<span class="k">return</span> <span class="n">this_dln_sigma_R_inv_dM</span></div>
+	
+
+<div class="viewcode-block" id="compute_peak_height"><a class="viewcode-back" href="../compute_hod_old.html#compute_hod_old.compute_peak_height">[docs]</a><span class="k">def</span> <span class="nf">compute_peak_height</span><span class="p">(</span><span class="n">m_halo</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">omega_m</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;compute peak height for a halo of mass m_halo given a (z=0) power spectrum P(k).</span>
+<span class="sd">	sigma^2 = (1/2pi^2) \int P(k) W^2(kR) k^2 dk.&quot;&quot;&quot;</span>
+
+	<span class="n">this_sigma_M</span> <span class="o">=</span> <span class="n">sigma_M</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">m_halo</span><span class="p">,</span> <span class="n">omega_m</span><span class="p">)</span>
+	<span class="n">nu</span> <span class="o">=</span> <span class="n">delta_c</span> <span class="o">/</span> <span class="n">this_sigma_M</span>
+
+	<span class="k">return</span> <span class="n">nu</span></div>
+
+
+<div class="viewcode-block" id="compute_linear_bias"><a class="viewcode-back" href="../compute_hod_old.html#compute_hod_old.compute_linear_bias">[docs]</a><span class="k">def</span> <span class="nf">compute_linear_bias</span><span class="p">(</span><span class="n">m_halo</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">omega_m</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;compute the linear bias for halos of mass logMmin</span>
+<span class="sd">		based on the Tinker+ 2010 fitting function.&quot;&quot;&quot;</span>
+
+	<span class="n">nu</span> <span class="o">=</span> <span class="n">compute_peak_height</span><span class="p">(</span><span class="n">m_halo</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">omega_m</span><span class="p">)</span>
+
+	<span class="c1">## fitting function (eq. 6 from Tinker et al. 2010)</span>
+
+	<span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">Delta_vir</span><span class="p">)</span>
+	<span class="n">A</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">+</span> <span class="p">(</span> <span class="mf">0.24</span> <span class="o">*</span> <span class="n">y</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="mf">4.0</span><span class="o">/</span><span class="n">y</span><span class="p">)</span><span class="o">**</span><span class="mi">4</span><span class="p">)</span> <span class="p">)</span>
+	<span class="n">a</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.44</span> <span class="o">*</span> <span class="n">y</span><span class="p">)</span> <span class="o">-</span> <span class="mf">0.88</span>
+	<span class="n">B</span> <span class="o">=</span> <span class="mf">0.183</span>
+	<span class="n">b</span> <span class="o">=</span> <span class="mf">1.5</span>
+	<span class="n">C</span> <span class="o">=</span> <span class="mf">0.019</span> <span class="o">+</span> <span class="p">(</span><span class="mf">0.107</span> <span class="o">*</span> <span class="n">y</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span> <span class="mf">0.19</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="mf">4.0</span><span class="o">/</span><span class="n">y</span><span class="p">)</span><span class="o">**</span><span class="mi">4</span><span class="p">)</span> <span class="p">)</span>
+	<span class="n">c</span> <span class="o">=</span> <span class="mf">2.4</span>
+
+	<span class="n">bias</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="p">(</span> <span class="n">A</span> <span class="o">*</span> <span class="p">(</span><span class="n">nu</span><span class="o">**</span><span class="n">a</span> <span class="o">/</span> <span class="p">(</span><span class="n">nu</span><span class="o">**</span><span class="n">a</span> <span class="o">+</span> <span class="n">delta_c</span><span class="o">**</span><span class="n">a</span><span class="p">))</span> <span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">B</span> <span class="o">*</span> <span class="n">nu</span><span class="o">**</span><span class="n">b</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">C</span> <span class="o">*</span> <span class="n">nu</span><span class="o">**</span><span class="n">c</span><span class="p">)</span>
+	<span class="k">return</span> <span class="n">bias</span></div>
+
+
+<div class="viewcode-block" id="compute_linear_bias_ying"><a class="viewcode-back" href="../compute_hod_old.html#compute_hod_old.compute_linear_bias_ying">[docs]</a><span class="k">def</span> <span class="nf">compute_linear_bias_ying</span><span class="p">(</span><span class="n">m_halo</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">omega_m</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot; ying&#39;s code. &quot;&quot;&quot;</span>
+
+	<span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">Delta_vir</span><span class="p">)</span>
+	<span class="n">y44</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="mf">4.0</span><span class="o">/</span><span class="n">y</span><span class="p">,</span> <span class="mf">4.0</span><span class="p">))</span>
+	<span class="n">bias_A</span> <span class="o">=</span> <span class="mf">1.00</span> <span class="o">+</span> <span class="mf">0.24</span><span class="o">*</span><span class="n">y</span><span class="o">*</span><span class="n">y44</span>
+	<span class="n">bias_a</span> <span class="o">=</span> <span class="p">(</span><span class="n">y</span><span class="o">-</span><span class="mf">2.0</span><span class="p">)</span><span class="o">*</span><span class="mf">0.44</span>
+	<span class="n">bias_B</span> <span class="o">=</span> <span class="mf">0.4</span>
+	<span class="n">bias_b</span> <span class="o">=</span> <span class="mf">1.5</span>
+	<span class="n">bias_C</span> <span class="o">=</span> <span class="p">((</span><span class="n">y</span><span class="o">-</span><span class="mf">2.6</span><span class="p">)</span><span class="o">*</span><span class="mf">0.4</span> <span class="o">+</span> <span class="mf">1.11</span> <span class="o">+</span> <span class="mf">0.7</span><span class="o">*</span><span class="n">y</span><span class="o">*</span><span class="n">y44</span><span class="p">)</span><span class="o">*</span><span class="mf">0.94</span>
+	<span class="n">bias_c</span> <span class="o">=</span> <span class="mf">2.4</span>
+
+	<span class="n">sig</span> <span class="o">=</span> <span class="n">sigma_M</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">m_halo</span><span class="p">,</span> <span class="n">omega_m</span><span class="p">)</span>
+	<span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">sig</span><span class="p">,</span> <span class="o">-</span><span class="n">bias_a</span><span class="p">)</span>
+	<span class="n">b</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">bias_A</span> <span class="o">*</span> <span class="n">a</span> <span class="o">/</span> <span class="p">(</span><span class="n">a</span> <span class="o">+</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">+</span> <span class="n">bias_B</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">sig</span><span class="p">,</span> <span class="o">-</span><span class="n">bias_b</span><span class="p">)</span> 
+									  <span class="o">+</span> <span class="n">bias_C</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">sig</span><span class="p">,</span> <span class="o">-</span><span class="n">bias_c</span><span class="p">))</span>
+
+	<span class="k">return</span> <span class="n">b</span></div>
+
+
+<div class="viewcode-block" id="dndm_tinker_all"><a class="viewcode-back" href="../compute_hod_old.html#compute_hod_old.dndm_tinker_all">[docs]</a><span class="k">def</span> <span class="nf">dndm_tinker_all</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">P</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">Omega_M</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;analytic fitting formula for mass function from Tinker+ 2008</span>
+<span class="sd">		as a function of redshift and Delta_vir.&quot;&quot;&quot;</span>
+
+	<span class="n">sigma</span> <span class="o">=</span> <span class="n">sigma_M</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">M</span><span class="o">=</span><span class="n">M</span><span class="p">,</span> <span class="n">Omega_M</span><span class="o">=</span><span class="n">Omega_M</span><span class="p">)</span>
+
+	<span class="n">A</span> <span class="o">=</span> <span class="mf">0.186</span> <span class="o">*</span> <span class="p">((</span><span class="mf">1.0</span><span class="o">+</span><span class="n">z</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mf">0.14</span><span class="p">))</span>
+	<span class="n">a</span> <span class="o">=</span> <span class="mf">1.47</span> <span class="o">*</span> <span class="p">((</span><span class="mf">1.0</span><span class="o">+</span><span class="n">z</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mf">0.06</span><span class="p">))</span>
+	<span class="n">alpha</span> <span class="o">=</span> <span class="mf">10.</span><span class="o">**</span><span class="p">(</span> <span class="o">-</span> <span class="p">(</span> <span class="p">(</span><span class="mf">0.75</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">Delta_vir</span><span class="o">/</span><span class="mf">75.</span><span class="p">))</span><span class="o">**</span><span class="p">(</span><span class="mf">1.2</span><span class="p">)</span> <span class="p">)</span> <span class="p">)</span>
+	<span class="n">b</span> <span class="o">=</span> <span class="mf">2.57</span> <span class="o">*</span> <span class="p">((</span><span class="mf">1.0</span><span class="o">+</span><span class="n">z</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="n">alpha</span><span class="p">))</span>
+	<span class="n">c</span> <span class="o">=</span> <span class="mf">1.19</span>
+	<span class="n">f_sigma</span> <span class="o">=</span> <span class="n">A</span> <span class="o">*</span> <span class="p">(</span> <span class="p">(</span><span class="n">sigma</span> <span class="o">/</span> <span class="n">b</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="n">a</span><span class="p">)</span> <span class="o">+</span> <span class="mf">1.0</span> <span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">c</span><span class="o">/</span><span class="p">(</span><span class="n">sigma</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+
+	<span class="c1">## compute ( d ln sigma^{-1} / dM )</span>
+	<span class="n">this_dln_sigma_inv_dM</span> <span class="o">=</span> <span class="n">dln_sigma_inv_dM</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">M</span><span class="o">=</span><span class="n">M</span><span class="p">,</span> <span class="n">Omega_M</span><span class="o">=</span><span class="n">Omega_M</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="o">-</span><span class="mf">2.0</span><span class="o">*</span><span class="n">sigma</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+
+	<span class="c1">## compute finite difference approximation</span>
+	<span class="c1">#eps = 1.01	# for computing finite differences of (ln sigma^(-1))</span>
+	<span class="c1">#sigma_plus = sigma_M(k, P, M=M*eps, Omega_M=Omega_M)</span>
+	<span class="c1">#this_dln_sigma_inv = np.log(1.0/sigma_plus) - np.log(1.0/sigma)</span>
+	<span class="c1">#this_dM = M*eps - M</span>
+	<span class="c1">#finite_this_dln_sigma_inv_dM = this_dln_sigma_inv / this_dM</span>
+	<span class="c1">#frac_err = finite_this_dln_sigma_inv_dM/this_dln_sigma_inv_dM - 1.0</span>
+	<span class="c1">#if abs(frac_err) &gt; 0.005:</span>
+	<span class="c1">#	print(&quot;INCORRECT DERIVATIVE: {}&quot;.format(frac_err))</span>
+
+	<span class="n">rho_mean</span> <span class="o">=</span> <span class="p">(</span><span class="n">Omega_M</span> <span class="o">*</span> <span class="n">rho_crit</span><span class="p">)</span> <span class="c1"># comoving units!</span>
+	<span class="k">return</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">f_sigma</span><span class="p">,</span> <span class="n">rho_mean</span><span class="o">/</span><span class="n">M</span><span class="p">,</span> <span class="n">this_dln_sigma_inv_dM</span></div>
+
+
+<div class="viewcode-block" id="dndm_tinker"><a class="viewcode-back" href="../compute_hod_old.html#compute_hod_old.dndm_tinker">[docs]</a><span class="k">def</span> <span class="nf">dndm_tinker</span><span class="p">(</span><span class="n">M</span><span class="p">,</span><span class="n">z</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">P</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">Omega_M</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+	<span class="n">sigma</span><span class="p">,</span> <span class="n">f_sigma</span><span class="p">,</span> <span class="n">rho_mean_over_M</span><span class="p">,</span> <span class="n">this_dln_sigma_inv_dM</span> <span class="o">=</span> <span class="n">dndm_tinker_all</span><span class="p">(</span><span class="n">M</span><span class="p">,</span><span class="n">z</span><span class="p">,</span><span class="n">k</span><span class="p">,</span><span class="n">P</span><span class="p">,</span><span class="n">Omega_M</span><span class="p">)</span>
+	<span class="k">return</span> <span class="n">f_sigma</span><span class="o">*</span><span class="p">(</span><span class="n">rho_mean_over_M</span><span class="p">)</span><span class="o">*</span><span class="n">this_dln_sigma_inv_dM</span></div>
+
+
+<div class="viewcode-block" id="compute_ngal"><a class="viewcode-back" href="../compute_hod_old.html#compute_hod_old.compute_ngal">[docs]</a><span class="k">def</span> <span class="nf">compute_ngal</span><span class="p">(</span><span class="n">logM</span><span class="p">,</span> <span class="n">dM</span><span class="p">,</span> <span class="n">mass_function</span><span class="p">,</span>
+				 <span class="n">logMmin</span><span class="p">,</span> <span class="n">M1_over_Mmin</span><span class="p">,</span> <span class="n">M0_over_M1</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">siglogM</span><span class="p">,</span> <span class="n">f_cen</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;compute number density from HOD.&quot;&quot;&quot;</span>
+
+	<span class="n">M</span> <span class="o">=</span> <span class="mf">10.</span><span class="o">**</span><span class="n">logM</span>
+	<span class="n">Mmin</span> <span class="o">=</span> <span class="mf">10.</span><span class="o">**</span><span class="n">logMmin</span>
+	<span class="n">M1</span> <span class="o">=</span> <span class="n">M1_over_Mmin</span><span class="o">*</span><span class="n">Mmin</span>
+	<span class="n">M0</span> <span class="o">=</span> <span class="n">M0_over_M1</span><span class="o">*</span><span class="n">M1</span>
+
+	<span class="n">mean_cen</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.</span> <span class="o">+</span> <span class="n">scipy</span><span class="o">.</span><span class="n">special</span><span class="o">.</span><span class="n">erf</span><span class="p">((</span><span class="n">logM</span> <span class="o">-</span> <span class="n">logMmin</span><span class="p">)</span><span class="o">/</span><span class="n">siglogM</span><span class="p">))</span>
+	<span class="n">mean_sat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">M</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+	<span class="n">mean_sat</span><span class="p">[</span><span class="n">M</span> <span class="o">&gt;</span> <span class="n">M0</span><span class="p">]</span> <span class="o">=</span> <span class="n">mean_cen</span><span class="p">[</span><span class="n">M</span> <span class="o">&gt;</span> <span class="n">M0</span><span class="p">]</span> <span class="o">*</span> <span class="p">(((</span><span class="n">M</span><span class="p">[</span><span class="n">M</span> <span class="o">&gt;</span> <span class="n">M0</span><span class="p">]</span> <span class="o">-</span> <span class="n">M0</span><span class="p">)</span> <span class="o">/</span> <span class="n">M1</span><span class="p">)</span><span class="o">**</span><span class="n">alpha</span><span class="p">)</span>
+
+	<span class="n">integrand</span> <span class="o">=</span> <span class="p">(</span> <span class="p">(</span><span class="n">mean_cen</span> <span class="o">*</span> <span class="n">f_cen</span><span class="p">)</span> <span class="o">+</span> <span class="n">mean_sat</span> <span class="p">)</span> <span class="o">*</span> <span class="n">mass_function</span>
+
+	<span class="c1">## how you integrate the number density affects the s-s term by ~10% (!)</span>
+<span class="c1">#	ngal = scipy.integrate.simps(integrand, x=M)</span>
+	<span class="n">ngal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">integrand</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">dM</span><span class="p">)</span>
+
+	<span class="k">return</span> <span class="n">ngal</span></div>
+
+
+<div class="viewcode-block" id="compute_HOD_parameters"><a class="viewcode-back" href="../compute_hod_old.html#compute_hod_old.compute_HOD_parameters">[docs]</a><span class="k">def</span> <span class="nf">compute_HOD_parameters</span><span class="p">(</span><span class="n">ngal</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">M1_over_Mmin</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">M0_over_M1</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+						<span class="n">siglogM</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">f_cen</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+						<span class="n">mass_tabulated</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">massfun_tabulated</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">logMmin_guess</span><span class="o">=</span><span class="mf">13.5</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;Compute the physical (Msun h^-1) HOD parameters from ratios of masses</span>
+<span class="sd">	and the desired number density of galaxies.&quot;&quot;&quot;</span>
+
+	<span class="n">dM</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">mass_tabulated</span><span class="p">)</span>
+	<span class="n">M</span> <span class="o">=</span> <span class="n">mass_tabulated</span>
+	<span class="n">mass_function</span> <span class="o">=</span> <span class="n">massfun_tabulated</span>
+	<span class="n">logM</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">M</span><span class="p">)</span>
+
+	<span class="n">this_ngal</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">logMmin</span><span class="p">:</span> <span class="n">compute_ngal</span><span class="p">(</span><span class="n">logM</span><span class="p">,</span> <span class="n">dM</span><span class="p">,</span> <span class="n">mass_function</span><span class="p">,</span> <span class="n">logMmin</span><span class="p">,</span>
+											<span class="n">M1_over_Mmin</span><span class="p">,</span> <span class="n">M0_over_M1</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">siglogM</span><span class="p">,</span> <span class="n">f_cen</span><span class="p">)</span>
+	<span class="n">objective</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">logMmin</span><span class="p">:</span> <span class="n">this_ngal</span><span class="p">(</span><span class="n">logMmin</span><span class="p">)</span> <span class="o">-</span> <span class="n">ngal</span>
+	<span class="n">logMmin</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">optimize</span><span class="o">.</span><span class="n">newton</span><span class="p">(</span><span class="n">objective</span><span class="p">,</span> <span class="n">logMmin_guess</span><span class="p">,</span> <span class="n">maxiter</span> <span class="o">=</span> <span class="mi">100</span><span class="p">)</span>
+
+	<span class="n">Mmin</span> <span class="o">=</span> <span class="mi">10</span><span class="o">**</span><span class="p">(</span><span class="n">logMmin</span><span class="p">)</span>
+	<span class="n">M1</span> <span class="o">=</span> <span class="n">Mmin</span><span class="o">*</span><span class="n">M1_over_Mmin</span>
+	<span class="n">M0</span> <span class="o">=</span> <span class="n">M1</span><span class="o">*</span><span class="n">M0_over_M1</span>
+	
+	<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;logMmin: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">logMmin</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+	<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;optimized ngal: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">this_ngal</span><span class="p">(</span><span class="n">logMmin</span><span class="p">),</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+	<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;desired ngal: </span><span class="si">%s</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">ngal</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+
+	<span class="k">return</span> <span class="n">logMmin</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">M0</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">M1</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="count_satsat_pairs"><a class="viewcode-back" href="../compute_hod_old.html#compute_hod_old.count_satsat_pairs">[docs]</a><span class="nd">@jit</span>
+<span class="k">def</span> <span class="nf">count_satsat_pairs</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">z</span><span class="p">,</span><span class="n">rbins</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;count pairs x,y,z into bins rbins.&quot;&quot;&quot;</span>
+		<span class="n">r2bins</span> <span class="o">=</span> <span class="n">rbins</span><span class="o">**</span><span class="mi">2</span>
+		<span class="n">points</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span> <span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="p">)</span>
+		<span class="n">k</span> <span class="o">=</span> <span class="mi">0</span>
+		<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+				<span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">):</span>
+						<span class="n">dx</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-</span><span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+						<span class="n">dy</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-</span><span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+						<span class="n">dz</span> <span class="o">=</span> <span class="n">z</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-</span><span class="n">z</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+						<span class="n">r2</span> <span class="o">=</span> <span class="n">dx</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">dy</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">dz</span><span class="o">**</span><span class="mi">2</span>
+						<span class="n">points</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">r2</span>
+						<span class="n">k</span> <span class="o">+=</span> <span class="mi">1</span>
+		<span class="n">counts</span><span class="p">,</span> <span class="n">bins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="n">r2bins</span><span class="p">)</span>
+
+		<span class="k">return</span> <span class="n">counts</span></div>
+
+
+<div class="viewcode-block" id="count_censat_pairs"><a class="viewcode-back" href="../compute_hod_old.html#compute_hod_old.count_censat_pairs">[docs]</a><span class="k">def</span> <span class="nf">count_censat_pairs</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">z</span><span class="p">,</span><span class="n">rbins</span><span class="p">):</span>
+		<span class="n">r2bins</span> <span class="o">=</span> <span class="n">rbins</span><span class="o">**</span><span class="mi">2</span>
+		<span class="n">points</span> <span class="o">=</span> <span class="n">x</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">y</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">z</span><span class="o">**</span><span class="mi">2</span>
+		<span class="n">counts</span><span class="p">,</span> <span class="n">bins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span><span class="n">points</span><span class="p">,</span><span class="n">bins</span><span class="o">=</span><span class="n">r2bins</span><span class="p">)</span>
+
+		<span class="k">return</span> <span class="n">counts</span></div>
+		
+
+<div class="viewcode-block" id="monte_carlo_1halo"><a class="viewcode-back" href="../compute_hod_old.html#compute_hod_old.monte_carlo_1halo">[docs]</a><span class="k">def</span> <span class="nf">monte_carlo_1halo</span><span class="p">(</span><span class="n">rbins</span><span class="p">,</span> <span class="n">Ncen_of_M</span><span class="p">,</span> <span class="n">Nsat_of_M</span><span class="p">,</span>
+						<span class="n">cM</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">dndm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">Omega_M</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">redshift</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mass_tab</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;compute monte carlo pair counts for 1-halo term.&quot;&quot;&quot;</span>
+
+		<span class="n">ss_counts_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">rbins</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+		<span class="n">cs_counts_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">rbins</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+		<span class="n">nhalos</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mf">1e6</span><span class="p">)</span>
+		<span class="n">halo_mass</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nhalos</span><span class="p">)</span>
+		<span class="c1">#ncen = np.zeros(nhalos)</span>
+		<span class="n">nsat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nhalos</span><span class="p">)</span>
+
+		<span class="n">N_of_M</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">M</span><span class="p">:</span> <span class="n">Ncen_of_M</span><span class="p">(</span><span class="n">M</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">Nsat_of_M</span><span class="p">(</span><span class="n">M</span><span class="p">))</span>
+		<span class="n">vec_NM</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vectorize</span><span class="p">(</span><span class="n">N_of_M</span><span class="p">)</span>
+		<span class="n">ngal_integrand</span> <span class="o">=</span> <span class="n">dndm</span><span class="o">*</span><span class="n">vec_NM</span><span class="p">(</span><span class="n">mass_tab</span><span class="p">)</span>
+		<span class="n">ngal</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">integrate</span><span class="o">.</span><span class="n">simps</span><span class="p">(</span><span class="n">ngal_integrand</span><span class="o">*</span><span class="n">mass_tab</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">mass_tab</span><span class="p">))</span>
+		<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;ngal = </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ngal</span><span class="p">))</span>
+	
+
+		<span class="sd">&quot;&quot;&quot;step 1. sample in bins, then weight pair counts according to mass function.&quot;&quot;&quot;</span>
+
+		<span class="n">mf</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">interpolate</span><span class="o">.</span><span class="n">interp1d</span><span class="p">(</span><span class="n">mass_tab</span><span class="p">,</span> <span class="n">dndm</span><span class="p">)</span>
+		<span class="n">minmass</span> <span class="o">=</span> <span class="n">mass_tab</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+		<span class="n">maxmass</span> <span class="o">=</span> <span class="n">mass_tab</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+		<span class="n">halo_mass</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logspace</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">minmass</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">maxmass</span><span class="p">),</span> <span class="n">nhalos</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+		<span class="n">halo_mass</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">minmass</span>
+		<span class="n">halo_mass</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">maxmass</span>
+		<span class="n">halo_weight</span> <span class="o">=</span> <span class="n">mf</span><span class="p">(</span><span class="n">halo_mass</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">halo_mass</span><span class="p">)</span>
+
+
+		<span class="sd">&quot;&quot;&quot;--&gt; step 2a. for each halo, populate galaxies according to Nsat_of_M.&quot;&quot;&quot;</span>
+
+		<span class="n">vec_Ncen</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vectorize</span><span class="p">(</span><span class="n">Ncen_of_M</span><span class="p">)</span>
+		<span class="n">ncen_exp</span> <span class="o">=</span> <span class="n">vec_Ncen</span><span class="p">(</span><span class="n">halo_mass</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+		<span class="n">ncen</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nhalos</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint64</span><span class="p">)</span>
+		<span class="n">ncen</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="n">nhalos</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">ncen_exp</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+
+		<span class="n">vec_Nsat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vectorize</span><span class="p">(</span><span class="n">Nsat_of_M</span><span class="p">)</span>
+		<span class="n">nsat_exp</span> <span class="o">=</span> <span class="n">vec_Nsat</span><span class="p">(</span><span class="n">halo_mass</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+		<span class="n">nsat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">poisson</span><span class="p">(</span><span class="n">lam</span><span class="o">=</span><span class="n">nsat_exp</span><span class="p">)</span>
+
+		<span class="n">nsat_nonzero</span> <span class="o">=</span> <span class="n">nsat</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">nsat</span><span class="p">)]</span>
+		<span class="n">ncen_nonzero</span> <span class="o">=</span> <span class="n">ncen</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">nsat</span><span class="p">)]</span>
+		<span class="n">halo_mass_nonzero</span> <span class="o">=</span> <span class="n">halo_mass</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">nsat</span><span class="p">)]</span>
+		<span class="n">halo_weight_nonzero</span> <span class="o">=</span> <span class="n">halo_weight</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">nsat</span><span class="p">)]</span>
+
+		<span class="k">def</span> <span class="nf">NFW_cdf</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">cvir</span><span class="p">):</span>
+				<span class="sd">&quot;&quot;&quot;the cumulative mass profile of an NFW halo.</span>
+<span class="sd">					x = r/Rvir. cvir = Rvir/rs.&quot;&quot;&quot;</span>
+				<span class="n">prefac</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span> <span class="mf">1.0</span> <span class="o">+</span> <span class="n">cvir</span> <span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">cvir</span> <span class="o">/</span> <span class="p">(</span> <span class="mf">1.0</span> <span class="o">+</span> <span class="n">cvir</span> <span class="p">))</span> <span class="p">)</span>
+				<span class="k">return</span> <span class="n">prefac</span> <span class="o">*</span> <span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span> <span class="mf">1.0</span> <span class="o">+</span> <span class="n">x</span> <span class="o">*</span> <span class="n">cvir</span> <span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">cvir</span> <span class="o">/</span> <span class="p">(</span> <span class="mf">1.0</span> <span class="o">+</span> <span class="n">x</span><span class="o">*</span><span class="n">cvir</span> <span class="p">))</span> <span class="p">)</span>
+
+		<span class="k">def</span> <span class="nf">NFW_cdf_sample</span><span class="p">(</span><span class="n">xin</span><span class="p">,</span> <span class="n">cvir</span><span class="p">):</span>
+				<span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>
+				<span class="n">invcdf</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">interpolate</span><span class="o">.</span><span class="n">interp1d</span><span class="p">(</span><span class="n">NFW_cdf</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">cvir</span><span class="p">),</span> <span class="n">x</span><span class="p">)</span>
+				<span class="k">return</span> <span class="n">invcdf</span><span class="p">(</span><span class="n">xin</span><span class="p">)</span>
+
+		<span class="n">num_gals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span> <span class="p">(</span> <span class="n">ncen</span> <span class="o">+</span> <span class="p">(</span><span class="n">ncen</span><span class="o">*</span><span class="n">nsat</span><span class="p">)</span> <span class="p">)</span> <span class="o">*</span> <span class="n">halo_weight</span> <span class="p">)</span>
+		<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;num_gals = </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">num_gals</span><span class="p">))</span>
+		<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;ncen = </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span> <span class="n">ncen</span> <span class="o">*</span> <span class="n">halo_weight</span> <span class="p">)</span> <span class="o">/</span> <span class="n">num_gals</span> <span class="p">))</span>
+		<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;nsat = </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span> <span class="p">(</span><span class="n">ncen</span><span class="o">*</span><span class="n">nsat</span><span class="p">)</span> <span class="o">*</span> <span class="n">halo_weight</span> <span class="p">)</span> <span class="o">/</span> <span class="n">num_gals</span> <span class="p">))</span>
+
+		<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nsat_nonzero</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+				<span class="n">this_mass</span> <span class="o">=</span> <span class="n">halo_mass_nonzero</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+				<span class="n">this_weight</span> <span class="o">=</span> <span class="n">halo_weight_nonzero</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+				<span class="n">this_nsat</span> <span class="o">=</span> <span class="n">nsat_nonzero</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+				<span class="n">this_ncen</span> <span class="o">=</span> <span class="n">ncen_nonzero</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+
+				<span class="k">if</span> <span class="n">this_ncen</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+					<span class="n">this_cvir</span> <span class="o">=</span> <span class="n">cM</span><span class="p">(</span><span class="n">this_mass</span><span class="p">)</span>
+					<span class="n">this_rvir</span> <span class="o">=</span> <span class="n">Rvir</span><span class="p">(</span><span class="n">this_mass</span><span class="p">,</span> <span class="n">Omega_M</span><span class="p">,</span> <span class="n">redshift</span><span class="p">)</span>
+
+					<span class="n">u</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">low</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span><span class="n">high</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span><span class="n">size</span><span class="o">=</span><span class="n">this_nsat</span><span class="p">)</span>
+					<span class="n">costheta</span> <span class="o">=</span> <span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="n">this_nsat</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1.0</span> <span class="c1"># [-1,1) interval</span>
+					<span class="n">phi</span> <span class="o">=</span> <span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="n">this_nsat</span><span class="p">)</span>
+
+					<span class="n">r</span> <span class="o">=</span> <span class="n">Rvir</span><span class="p">(</span><span class="n">this_mass</span><span class="p">,</span> <span class="n">Omega_M</span><span class="p">,</span> <span class="n">redshift</span><span class="p">)</span> <span class="o">*</span> <span class="n">NFW_cdf_sample</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">this_cvir</span><span class="p">)</span>
+					<span class="n">sintheta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">costheta</span><span class="o">*</span><span class="n">costheta</span><span class="p">)</span>
+					<span class="n">x</span> <span class="o">=</span> <span class="n">r</span><span class="o">*</span><span class="n">sintheta</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">phi</span><span class="p">)</span>
+					<span class="n">y</span> <span class="o">=</span> <span class="n">r</span><span class="o">*</span><span class="n">sintheta</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">phi</span><span class="p">)</span>
+					<span class="n">z</span> <span class="o">=</span> <span class="n">r</span><span class="o">*</span><span class="n">costheta</span>
+				
+					<span class="sd">&quot;&quot;&quot;--&gt; step 2b. count satellite-satellite pairs within each halo,</span>
+<span class="sd">						accumulate in count_array.&quot;&quot;&quot;</span>
+					<span class="n">ss_counts_array</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="n">count_satsat_pairs</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">z</span><span class="p">,</span><span class="n">rbins</span><span class="p">)</span> <span class="o">*</span> <span class="n">this_weight</span>
+
+					<span class="sd">&quot;&quot;&quot;--&gt; step 2c. count central-satellite pairs within each halo.</span>
+<span class="sd">									(assume that whenever satellites exists, a central</span>
+<span class="sd">									also exists.)&quot;&quot;&quot;</span>
+					<span class="n">cs_counts_array</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="n">count_censat_pairs</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">z</span><span class="p">,</span><span class="n">rbins</span><span class="p">)</span> <span class="o">*</span> <span class="n">this_weight</span>
+
+		<span class="nb">print</span><span class="p">(</span><span class="n">ss_counts_array</span><span class="p">)</span>
+		<span class="nb">print</span><span class="p">(</span><span class="n">cs_counts_array</span><span class="p">)</span>
+		<span class="n">DD</span> <span class="o">=</span> <span class="n">ss_counts_array</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">cs_counts_array</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+		<span class="n">rmax</span> <span class="o">=</span> <span class="n">rbins</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+		<span class="n">rmin</span> <span class="o">=</span> <span class="n">rbins</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+		<span class="n">r</span>  <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">rmax</span><span class="o">+</span><span class="n">rmin</span><span class="p">)</span>
+
+		<span class="n">RR</span> <span class="o">=</span> <span class="n">ngal</span> <span class="o">*</span> <span class="n">num_gals</span> <span class="o">*</span> <span class="p">(</span><span class="mf">2.</span><span class="o">/</span><span class="mf">3.</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="p">(</span><span class="n">rmax</span><span class="o">**</span><span class="mi">3</span> <span class="o">-</span> <span class="n">rmin</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span>
+		<span class="n">xi</span> <span class="o">=</span> <span class="p">(</span><span class="n">DD</span><span class="o">/</span><span class="n">RR</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1.0</span>
+		<span class="n">xi_cs</span> <span class="o">=</span> <span class="p">(</span><span class="n">cs_counts_array</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="n">RR</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1.0</span>
+		<span class="n">xi_ss</span> <span class="o">=</span> <span class="p">(</span><span class="n">ss_counts_array</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="n">RR</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1.0</span>
+
+		<span class="k">return</span> <span class="n">r</span><span class="p">,</span> <span class="n">xi</span><span class="p">,</span> <span class="n">xi_cs</span><span class="p">,</span> <span class="n">xi_ss</span></div>
+				
+
+<div class="viewcode-block" id="differential_pair_count_NFW_samec"><a class="viewcode-back" href="../compute_hod_old.html#compute_hod_old.differential_pair_count_NFW_samec">[docs]</a><span class="k">def</span> <span class="nf">differential_pair_count_NFW_samec</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;compute differential pair count at separation s = r/Rvir</span>
+<span class="sd">		using Sheth et al. 2001 [MNRAS 325, 1288-1302] formula.</span>
+<span class="sd">		[c = Rvir/rs].&quot;&quot;&quot;</span>
+
+	<span class="n">a</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">/</span><span class="n">c</span>
+	<span class="n">x</span> <span class="o">=</span> <span class="n">s</span><span class="o">*</span><span class="n">c</span>		<span class="c1"># == r/a (in units of Rvir)</span>
+	<span class="n">prefac</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span> <span class="mf">1.0</span> <span class="o">+</span> <span class="n">c</span> <span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">c</span> <span class="o">/</span> <span class="p">(</span> <span class="mf">1.0</span> <span class="o">+</span> <span class="n">c</span> <span class="p">))</span> <span class="p">)</span>
+	<span class="n">norm</span> <span class="o">=</span> <span class="n">a</span><span class="o">**</span><span class="mi">3</span> <span class="o">/</span> <span class="n">prefac</span><span class="o">**</span><span class="mi">2</span>
+	<span class="n">res</span> <span class="o">=</span> <span class="mf">0.</span>
+
+	<span class="k">if</span> <span class="n">s</span> <span class="o">&lt;=</span> <span class="mf">1.0</span><span class="p">:</span>
+		<span class="n">t1</span> <span class="o">=</span> <span class="p">(</span> <span class="o">-</span><span class="mf">4.0</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="n">a</span><span class="p">)</span> <span class="o">+</span> <span class="mf">2.0</span><span class="o">*</span><span class="n">a</span><span class="o">*</span><span class="n">x</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="mf">2.0</span><span class="o">*</span><span class="n">a</span><span class="p">)</span> <span class="o">+</span> <span class="n">a</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">x</span><span class="o">**</span><span class="mi">2</span> <span class="p">)</span> <span class="o">/</span> \
+				<span class="p">(</span> <span class="mf">2.0</span><span class="o">*</span><span class="n">x</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="n">a</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="mf">2.0</span><span class="o">+</span><span class="n">x</span><span class="p">)</span> <span class="p">)</span>
+		<span class="n">t2</span> <span class="o">=</span> <span class="n">x</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mf">3.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span> <span class="p">(</span> <span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="n">a</span><span class="o">-</span><span class="n">a</span><span class="o">*</span><span class="n">x</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="n">x</span><span class="p">)</span> <span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="n">a</span><span class="p">)</span> <span class="p">)</span>
+		<span class="n">t3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="n">x</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span> <span class="n">x</span><span class="o">*</span><span class="p">(</span><span class="mf">2.0</span><span class="o">+</span><span class="n">x</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="p">)</span>
+		<span class="n">res</span> <span class="o">=</span> <span class="n">t1</span><span class="o">+</span><span class="n">t2</span><span class="o">+</span><span class="n">t3</span>
+
+	<span class="k">elif</span> <span class="n">s</span> <span class="o">&gt;</span> <span class="mf">1.0</span> <span class="ow">and</span> <span class="n">s</span> <span class="o">&lt;=</span> <span class="mf">2.0</span><span class="p">:</span>
+		<span class="n">t1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span> <span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="n">a</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">a</span><span class="o">*</span><span class="n">x</span><span class="o">+</span><span class="n">a</span><span class="o">-</span><span class="mf">1.0</span><span class="p">)</span> <span class="p">)</span> <span class="o">/</span> <span class="p">(</span> <span class="n">x</span><span class="o">*</span><span class="p">(</span><span class="mf">2.0</span><span class="o">+</span><span class="n">x</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="p">)</span>
+		<span class="n">t2</span> <span class="o">=</span> <span class="p">(</span> <span class="n">a</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">x</span> <span class="o">-</span> <span class="mf">2.0</span><span class="o">*</span><span class="n">a</span> <span class="p">)</span> <span class="o">/</span> <span class="p">(</span> <span class="mf">2.0</span><span class="o">*</span><span class="n">x</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="n">a</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="mf">2.0</span><span class="o">+</span><span class="n">x</span><span class="p">)</span> <span class="p">)</span>
+		<span class="n">res</span> <span class="o">=</span> <span class="n">t1</span><span class="o">+</span><span class="n">t2</span>
+
+	<span class="k">return</span> <span class="p">(</span><span class="mf">1.0</span><span class="o">/</span><span class="n">norm</span><span class="p">)</span> <span class="o">*</span> <span class="n">res</span> <span class="o">*</span> <span class="n">s</span><span class="o">**</span><span class="mi">2</span></div>
+
+
+<div class="viewcode-block" id="differential_pair_count_NFW_allterms"><a class="viewcode-back" href="../compute_hod_old.html#compute_hod_old.differential_pair_count_NFW_allterms">[docs]</a><span class="k">def</span> <span class="nf">differential_pair_count_NFW_allterms</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">c1</span><span class="p">,</span> <span class="n">c2</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;from Appendix A of Zheng &amp; Weinberg (2007).&quot;&quot;&quot;</span>
+
+	<span class="kn">from</span> <span class="nn">math</span> <span class="k">import</span> <span class="n">sqrt</span><span class="p">,</span> <span class="n">log</span><span class="p">,</span> <span class="n">log10</span><span class="p">,</span> <span class="n">sin</span>
+	<span class="n">A_0</span> <span class="o">=</span> <span class="mf">2.4575</span>
+	<span class="n">alpha</span> <span class="o">=</span> <span class="o">-</span><span class="mf">3.099</span>
+	<span class="n">beta</span> <span class="o">=</span> <span class="mf">0.617</span>
+	<span class="n">c_T</span> <span class="o">=</span> <span class="mf">1.651</span>
+	<span class="n">mu</span> <span class="o">=</span> <span class="mf">4.706</span>
+	<span class="n">B_0</span> <span class="o">=</span> <span class="mf">0.0336</span>
+	<span class="n">omega</span> <span class="o">=</span> <span class="mf">2.684</span>
+	<span class="n">phi</span> <span class="o">=</span> <span class="mf">0.4079</span>
+	<span class="n">Astar</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">c</span><span class="p">:</span> <span class="n">A_0</span> <span class="o">*</span> <span class="n">c</span><span class="o">**</span><span class="p">(</span><span class="mf">3.0</span><span class="o">+</span><span class="n">alpha</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="p">(</span><span class="n">c</span><span class="o">/</span><span class="n">c_T</span><span class="p">)</span><span class="o">**</span><span class="p">((</span><span class="n">beta</span><span class="o">-</span><span class="n">alpha</span><span class="p">)</span><span class="o">/</span><span class="n">mu</span><span class="p">))</span><span class="o">**</span><span class="n">mu</span> <span class="o">*</span> \
+					 <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">B_0</span><span class="o">*</span><span class="n">sin</span><span class="p">(</span><span class="n">omega</span><span class="o">*</span><span class="p">(</span><span class="n">log10</span><span class="p">(</span><span class="n">c</span><span class="p">)</span><span class="o">-</span><span class="n">phi</span><span class="p">)))</span>
+	<span class="n">A</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">c1</span><span class="p">,</span><span class="n">c2</span><span class="p">:</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">Astar</span><span class="p">(</span><span class="n">c1</span><span class="p">)</span><span class="o">*</span><span class="n">Astar</span><span class="p">(</span><span class="n">c2</span><span class="p">))</span>
+
+	<span class="n">s</span> <span class="o">=</span> <span class="mf">2.0</span><span class="o">*</span><span class="n">x</span>
+
+	<span class="n">f1</span><span class="o">=</span><span class="mf">0.</span>
+	<span class="n">f2</span><span class="o">=</span><span class="mf">0.</span>
+	<span class="n">f3</span><span class="o">=</span><span class="mf">0.</span>
+	<span class="n">f4</span><span class="o">=</span><span class="mf">0.</span>
+	<span class="n">f</span><span class="o">=</span><span class="mf">0.</span>
+
+	<span class="k">if</span> <span class="n">x</span> <span class="o">&lt;=</span> <span class="mf">0.5</span><span class="p">:</span>
+		<span class="n">f1</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">/</span><span class="p">(</span><span class="n">c2</span><span class="o">+</span><span class="n">c1</span><span class="o">+</span><span class="n">c1</span><span class="o">*</span><span class="n">c2</span><span class="o">*</span><span class="n">s</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">log</span><span class="p">((</span><span class="mf">1.0</span><span class="o">+</span><span class="n">c1</span><span class="o">*</span><span class="n">s</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="n">c2</span><span class="o">*</span><span class="n">s</span><span class="p">))</span> <span class="o">+</span> \
+			 <span class="n">c1</span><span class="o">*</span><span class="n">s</span><span class="o">/</span><span class="p">(</span><span class="n">c2</span><span class="o">*</span><span class="p">(</span><span class="n">c2</span><span class="o">+</span><span class="n">c1</span><span class="o">+</span><span class="n">c1</span><span class="o">*</span><span class="n">c2</span><span class="o">*</span><span class="n">s</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="n">c1</span><span class="o">*</span><span class="n">s</span><span class="p">))</span>
+
+		<span class="n">eps</span> <span class="o">=</span> <span class="mf">1.0e-5</span>
+		<span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">s</span> <span class="o">-</span> <span class="p">(</span><span class="n">c1</span><span class="o">-</span><span class="n">c2</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">c1</span><span class="o">*</span><span class="n">c2</span><span class="p">))</span> <span class="o">&lt;</span> <span class="n">eps</span><span class="p">:</span>
+			<span class="n">f2</span> <span class="o">=</span> <span class="p">(</span><span class="n">c1</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="n">c2</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="n">c1</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">))</span><span class="o">/</span><span class="mf">2.0</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="n">f2</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">/</span><span class="p">(</span><span class="n">c2</span><span class="o">-</span><span class="n">c1</span><span class="o">+</span><span class="n">c1</span><span class="o">*</span><span class="n">c2</span><span class="o">*</span><span class="n">s</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">log</span><span class="p">((</span><span class="mf">1.0</span><span class="o">+</span><span class="n">c1</span><span class="o">*</span><span class="n">s</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="n">c2</span><span class="o">-</span><span class="n">c2</span><span class="o">*</span><span class="n">s</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="n">c1</span><span class="p">))</span> <span class="o">-</span> \
+					<span class="n">c1</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span><span class="o">-</span><span class="n">s</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">c2</span><span class="o">*</span><span class="p">(</span><span class="n">c2</span><span class="o">-</span><span class="n">c1</span><span class="o">+</span><span class="n">c1</span><span class="o">*</span><span class="n">c2</span><span class="o">*</span><span class="n">s</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="n">c1</span><span class="o">*</span><span class="n">s</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="n">c1</span><span class="p">))</span>
+
+		<span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">s</span> <span class="o">-</span> <span class="p">(</span><span class="n">c2</span><span class="o">-</span><span class="n">c1</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">c1</span><span class="o">*</span><span class="n">c2</span><span class="p">))</span> <span class="o">&lt;</span> <span class="n">eps</span><span class="p">:</span>
+			<span class="n">f3</span> <span class="o">=</span> <span class="p">(</span><span class="n">c1</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="n">c2</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="n">c2</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">))</span><span class="o">/</span><span class="mf">2.0</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="n">f3</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">/</span><span class="p">(</span><span class="n">c2</span><span class="o">-</span><span class="n">c1</span><span class="o">-</span><span class="n">c1</span><span class="o">*</span><span class="n">c2</span><span class="o">*</span><span class="n">s</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">log</span><span class="p">((</span><span class="mf">1.0</span><span class="o">+</span><span class="n">c2</span><span class="o">*</span><span class="n">s</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="n">c1</span><span class="o">-</span><span class="n">c1</span><span class="o">*</span><span class="n">s</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="n">c2</span><span class="p">))</span> <span class="o">+</span> \
+				 <span class="n">c1</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span><span class="o">-</span><span class="n">s</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">c2</span><span class="o">*</span><span class="p">(</span><span class="n">c2</span><span class="o">-</span><span class="n">c1</span><span class="o">-</span><span class="n">c1</span><span class="o">*</span><span class="n">c2</span><span class="o">*</span><span class="n">s</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="n">c1</span><span class="o">-</span><span class="n">c1</span><span class="o">*</span><span class="n">s</span><span class="p">))</span>
+
+		<span class="n">f4</span> <span class="o">=</span> <span class="o">-</span><span class="n">s</span><span class="o">/</span><span class="p">(</span><span class="n">c2</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="n">c1</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="n">c2</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="n">c1</span><span class="o">-</span><span class="n">c1</span><span class="o">*</span><span class="n">s</span><span class="p">))</span>
+
+		<span class="n">F</span> <span class="o">=</span> <span class="n">A</span><span class="p">(</span><span class="n">c1</span><span class="p">,</span><span class="n">c2</span><span class="p">)</span><span class="o">*</span><span class="p">(</span> <span class="n">f1</span><span class="o">+</span><span class="n">f2</span><span class="o">+</span><span class="n">f3</span><span class="o">+</span><span class="n">f4</span> <span class="p">)</span><span class="o">*</span><span class="n">s</span>
+
+	<span class="k">elif</span> <span class="n">x</span> <span class="o">&lt;=</span> <span class="mf">1.0</span><span class="p">:</span>
+		<span class="n">f</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">/</span><span class="p">(</span><span class="n">c2</span><span class="o">+</span><span class="n">c1</span><span class="o">+</span><span class="n">c1</span><span class="o">*</span><span class="n">c2</span><span class="o">*</span><span class="n">s</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">log</span><span class="p">((</span><span class="mf">1.0</span><span class="o">+</span><span class="n">c1</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="n">c2</span><span class="p">)</span><span class="o">/</span><span class="p">((</span><span class="mf">1.0</span><span class="o">-</span><span class="n">c1</span><span class="o">+</span><span class="n">c1</span><span class="o">*</span><span class="n">s</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span><span class="o">-</span><span class="n">c2</span><span class="o">+</span><span class="n">c2</span><span class="o">*</span><span class="n">s</span><span class="p">)))</span> <span class="o">+</span> \
+			 <span class="p">(</span><span class="n">s</span><span class="o">-</span><span class="mf">2.0</span><span class="p">)</span><span class="o">/</span><span class="p">((</span><span class="mf">1.0</span><span class="o">+</span><span class="n">c1</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="n">c2</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">c2</span><span class="o">+</span><span class="n">c1</span><span class="o">+</span><span class="n">c1</span><span class="o">*</span><span class="n">c2</span><span class="o">*</span><span class="n">s</span><span class="p">))</span>
+		<span class="n">F</span> <span class="o">=</span> <span class="n">A</span><span class="p">(</span><span class="n">c1</span><span class="p">,</span><span class="n">c2</span><span class="p">)</span><span class="o">*</span><span class="n">f</span><span class="o">*</span><span class="n">s</span>
+
+	<span class="k">elif</span> <span class="n">x</span> <span class="o">&gt;</span> <span class="mf">1.0</span><span class="p">:</span>
+		<span class="n">F</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+
+	<span class="k">if</span> <span class="n">F</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">:</span>
+		<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;negative Fprime(</span><span class="si">{}</span><span class="s2">,</span><span class="si">{}</span><span class="s2">,</span><span class="si">{}</span><span class="s2">) = </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">c1</span><span class="p">,</span><span class="n">c2</span><span class="p">,</span><span class="n">F</span><span class="p">))</span>
+
+	<span class="k">return</span> <span class="n">F</span><span class="p">,</span><span class="n">f1</span><span class="p">,</span><span class="n">f2</span><span class="p">,</span><span class="n">f3</span><span class="p">,</span><span class="n">f4</span><span class="p">,</span><span class="n">f</span></div>
+
+
+<div class="viewcode-block" id="differential_pair_count_NFW"><a class="viewcode-back" href="../compute_hod_old.html#compute_hod_old.differential_pair_count_NFW">[docs]</a><span class="k">def</span> <span class="nf">differential_pair_count_NFW</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">c1</span><span class="p">,</span><span class="n">c2</span><span class="p">):</span>
+	<span class="c1">#F,f1,f2,f3,f4,f = differential_pair_count_NFW_allterms(x,c1,c2)</span>
+	<span class="n">F</span> <span class="o">=</span> <span class="n">differential_pair_count_NFW_samec</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">c1</span><span class="p">)</span>
+	<span class="k">return</span> <span class="n">F</span></div>
+
+
+<div class="viewcode-block" id="cM_Correa2015"><a class="viewcode-back" href="../compute_hod_old.html#compute_hod_old.cM_Correa2015">[docs]</a><span class="k">def</span> <span class="nf">cM_Correa2015</span><span class="p">(</span><span class="n">M</span><span class="p">,</span><span class="n">z</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;concentration-mass relation from Correa et al. (2015)&quot;&quot;&quot;</span>
+
+	<span class="n">logM</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">M</span><span class="p">)</span>
+	<span class="n">alpha</span> <span class="o">=</span> <span class="mf">1.62774</span> <span class="o">-</span> <span class="mf">0.2458</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">z</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.01716</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">z</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="mf">2.0</span><span class="p">)</span>
+	<span class="n">beta</span> <span class="o">=</span> <span class="mf">1.66079</span> <span class="o">+</span> <span class="mf">0.00359</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">z</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1.6901</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">z</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="mf">0.00417</span><span class="p">)</span>
+	<span class="n">gamma</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.02049</span> <span class="o">+</span> <span class="mf">0.0253</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">z</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mf">0.1044</span><span class="p">)</span>
+	<span class="n">exponent</span> <span class="o">=</span> <span class="n">alpha</span> <span class="o">+</span> <span class="n">beta</span><span class="o">*</span><span class="n">logM</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">gamma</span><span class="o">*</span><span class="n">logM</span><span class="o">**</span><span class="p">(</span><span class="mf">2.0</span><span class="p">))</span>
+
+	<span class="c1"># Approximate factor (\sqrt 2) to rescale Rvir between crit, matter</span>
+	<span class="n">cvir</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">2.0</span><span class="p">)</span> <span class="o">*</span> <span class="mf">10.0</span><span class="o">**</span><span class="p">(</span><span class="n">exponent</span><span class="p">)</span> 
+
+	<span class="k">return</span> <span class="n">cvir</span></div>
+
+
+<span class="c1">#def cM(M,z=None):</span>
+<span class="c1">#	return cM_Correa2015(M,z=z)</span>
+
+
+
+<div class="viewcode-block" id="NFW_profile"><a class="viewcode-back" href="../compute_hod_old.html#compute_hod_old.NFW_profile">[docs]</a><span class="k">def</span> <span class="nf">NFW_profile</span><span class="p">(</span><span class="n">R</span><span class="p">,</span> <span class="n">cvir</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;R = r/rvir, cvir = rvir / rs, x = r/rs.&quot;&quot;&quot;</span>
+	<span class="n">x</span> <span class="o">=</span> <span class="n">R</span> <span class="o">*</span> <span class="n">cvir</span>
+	<span class="k">if</span> <span class="n">R</span> <span class="o">&lt;</span> <span class="mf">1.0</span><span class="p">:</span>
+		<span class="n">prefac</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span> <span class="mf">1.0</span> <span class="o">+</span> <span class="n">cvir</span> <span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">cvir</span> <span class="o">/</span> <span class="p">(</span> <span class="mf">1.0</span> <span class="o">+</span> <span class="n">cvir</span> <span class="p">))</span> <span class="p">)</span>
+		<span class="k">return</span> <span class="n">prefac</span> <span class="o">*</span> <span class="p">(</span> <span class="n">cvir</span> <span class="o">*</span> <span class="n">x</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="p">(</span> <span class="n">x</span> <span class="o">*</span> <span class="p">(</span> <span class="mf">1.0</span> <span class="o">+</span> <span class="n">x</span> <span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="p">)</span> <span class="p">)</span>
+	<span class="k">else</span><span class="p">:</span>
+		<span class="k">return</span> <span class="mf">0.</span></div>
+
+
+<div class="viewcode-block" id="compute_xi_1halo"><a class="viewcode-back" href="../compute_hod_old.html#compute_hod_old.compute_xi_1halo">[docs]</a><span class="k">def</span> <span class="nf">compute_xi_1halo</span><span class="p">(</span><span class="n">rbins</span><span class="p">,</span> <span class="n">N_of_M</span><span class="p">,</span> <span class="n">Ncen_of_M</span><span class="p">,</span> <span class="n">Nsat_of_M</span><span class="p">,</span> 
+						<span class="n">cM</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">dndm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">Omega_M</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">redshift</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mass_tab</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;compute 1halo power spectrum given a function N(M) &#39;N_of_M&#39; that gives the HOD:</span>
+<span class="sd">	P_gg,1h(k) = (1/n_g^2) \int_0^\inf 0.5*(N_of_M(M)*(N_of_M(M)-1)) W^2(k,M) (dn/dM) dM</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+
+	<span class="n">xi_gg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">rbins</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+	<span class="n">xi_gg_cs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">rbins</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+	<span class="n">xi_gg_ss</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">rbins</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+	<span class="n">vec_NM</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vectorize</span><span class="p">(</span><span class="n">N_of_M</span><span class="p">)</span>
+	<span class="n">vec_Nsat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vectorize</span><span class="p">(</span><span class="n">Nsat_of_M</span><span class="p">)</span>
+	<span class="n">vec_Ncen</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vectorize</span><span class="p">(</span><span class="n">Ncen_of_M</span><span class="p">)</span>
+	<span class="n">ngal_integrand</span> <span class="o">=</span> <span class="n">dndm</span><span class="o">*</span><span class="n">vec_NM</span><span class="p">(</span><span class="n">mass_tab</span><span class="p">)</span>
+	<span class="n">ngal</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">integrate</span><span class="o">.</span><span class="n">simps</span><span class="p">(</span><span class="n">ngal_integrand</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">mass_tab</span><span class="p">)</span>
+	<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;ngal = </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ngal</span><span class="p">))</span>
+
+	<span class="n">Fprime</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">c</span><span class="p">:</span> <span class="n">differential_pair_count_NFW</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span>
+
+	<span class="n">vec_NFW_profile</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vectorize</span><span class="p">(</span><span class="n">NFW_profile</span><span class="p">)</span>
+	<span class="n">vec_Fprime</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vectorize</span><span class="p">(</span><span class="n">Fprime</span><span class="p">)</span>
+
+	<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">rbins</span><span class="p">):</span>
+		
+		<span class="k">def</span> <span class="nf">counts_cs_integrand</span><span class="p">(</span><span class="n">logM</span><span class="p">):</span>
+			<span class="n">M</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">logM</span><span class="p">)</span>
+			<span class="n">rvir</span> <span class="o">=</span> <span class="n">Rvir</span><span class="p">(</span><span class="n">M</span><span class="p">,</span><span class="n">Omega_M</span><span class="p">)</span>
+			<span class="n">mf</span> <span class="o">=</span> <span class="n">dndm</span>
+			<span class="n">npairs_cs</span> <span class="o">=</span> <span class="p">(</span> <span class="n">vec_Ncen</span><span class="p">(</span><span class="n">M</span><span class="p">)</span> <span class="o">*</span> <span class="n">vec_Nsat</span><span class="p">(</span><span class="n">M</span><span class="p">)</span> <span class="p">)</span> <span class="o">*</span> <span class="n">vec_NFW_profile</span><span class="p">(</span><span class="n">r</span><span class="o">/</span><span class="n">rvir</span><span class="p">,</span> <span class="n">cM</span><span class="p">(</span><span class="n">M</span><span class="p">))</span>
+				<span class="c1"># if there is a satellite, there is always a central</span>
+			<span class="n">result</span> <span class="o">=</span> <span class="n">mf</span> <span class="o">*</span> <span class="p">(</span><span class="n">npairs_cs</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">rvir</span><span class="p">)</span> <span class="o">*</span> <span class="n">M</span>
+			<span class="k">return</span> <span class="n">result</span>
+
+		<span class="k">def</span> <span class="nf">counts_ss_integrand</span><span class="p">(</span><span class="n">logM</span><span class="p">):</span>
+			<span class="n">M</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">logM</span><span class="p">)</span>
+			<span class="n">rvir</span> <span class="o">=</span> <span class="n">Rvir</span><span class="p">(</span><span class="n">M</span><span class="p">,</span><span class="n">Omega_M</span><span class="p">)</span>
+			<span class="n">mf</span> <span class="o">=</span> <span class="n">dndm</span>
+			<span class="n">npairs_ss</span> <span class="o">=</span> <span class="p">(</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">vec_Nsat</span><span class="p">(</span><span class="n">M</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span> <span class="p">)</span> <span class="o">*</span> <span class="n">vec_Fprime</span><span class="p">(</span><span class="n">r</span><span class="o">/</span><span class="n">rvir</span><span class="p">,</span> <span class="n">cM</span><span class="p">(</span><span class="n">M</span><span class="p">))</span>
+			<span class="n">result</span> <span class="o">=</span> <span class="n">mf</span> <span class="o">*</span> <span class="p">(</span><span class="n">npairs_ss</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">rvir</span><span class="p">)</span> <span class="o">*</span> <span class="n">M</span>
+			<span class="k">return</span> <span class="n">result</span>
+
+		<span class="n">DD_cs</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">integrate</span><span class="o">.</span><span class="n">simps</span><span class="p">(</span><span class="n">counts_cs_integrand</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">mass_tab</span><span class="p">)),</span><span class="n">x</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">mass_tab</span><span class="p">))</span>
+		<span class="n">DD_ss</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">integrate</span><span class="o">.</span><span class="n">simps</span><span class="p">(</span><span class="n">counts_ss_integrand</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">mass_tab</span><span class="p">)),</span><span class="n">x</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">mass_tab</span><span class="p">))</span>
+		<span class="n">RR</span> <span class="o">=</span> <span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">r</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">ngal</span><span class="o">**</span><span class="mi">2</span>
+		<span class="n">xi_gg_cs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">DD_cs</span><span class="o">/</span><span class="n">RR</span>
+		<span class="n">xi_gg_ss</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">DD_ss</span><span class="o">/</span><span class="n">RR</span>
+		<span class="n">xi_gg</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="n">DD_cs</span> <span class="o">+</span> <span class="n">DD_ss</span><span class="p">)</span><span class="o">/</span><span class="n">RR</span><span class="p">)</span>
+
+	<span class="k">return</span> <span class="n">rbins</span><span class="p">,</span> <span class="n">xi_gg</span><span class="p">,</span> <span class="n">xi_gg_cs</span><span class="p">,</span> <span class="n">xi_gg_ss</span></div>
+
+
+<div class="viewcode-block" id="compute_xi_2halo"><a class="viewcode-back" href="../compute_hod_old.html#compute_hod_old.compute_xi_2halo">[docs]</a><span class="k">def</span> <span class="nf">compute_xi_2halo</span><span class="p">(</span><span class="n">rbins</span><span class="p">,</span> <span class="n">N_of_M</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">Pk</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dndm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mass_tab</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> 
+					<span class="n">redshift</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+					<span class="n">Omega_M</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">biasfun</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;compute 2-halo term from an HOD, bias-mass relation, and a linear Pk.&quot;&quot;&quot;</span>
+
+	<span class="n">xi_mm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">rbins</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+	<span class="c1">#bias = lambda M: compute_linear_bias(M, k, Pk, omega_m=Omega_M, sigma_8=sigma_8, redshift=redshift)</span>
+	<span class="n">bias</span> <span class="o">=</span> <span class="n">biasfun</span>
+
+	<span class="n">vec_NM</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vectorize</span><span class="p">(</span><span class="n">N_of_M</span><span class="p">)</span>
+	<span class="n">bias_integrand</span> <span class="o">=</span> <span class="n">bias</span><span class="o">*</span><span class="n">dndm</span><span class="o">*</span><span class="n">vec_NM</span><span class="p">(</span><span class="n">mass_tab</span><span class="p">)</span> 
+	<span class="n">ngal_integrand</span> <span class="o">=</span> <span class="n">dndm</span><span class="o">*</span><span class="n">vec_NM</span><span class="p">(</span><span class="n">mass_tab</span><span class="p">)</span>
+	<span class="n">ngal</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">integrate</span><span class="o">.</span><span class="n">simps</span><span class="p">(</span><span class="n">ngal_integrand</span><span class="o">*</span><span class="n">mass_tab</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">mass_tab</span><span class="p">))</span>
+	<span class="n">b_g</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">integrate</span><span class="o">.</span><span class="n">simps</span><span class="p">(</span><span class="n">bias_integrand</span><span class="o">*</span><span class="n">mass_tab</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">mass_tab</span><span class="p">))</span> <span class="o">/</span> <span class="n">ngal</span>
+
+	<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;b_g = </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">b_g</span><span class="p">))</span>
+
+
+	<span class="c1">## compute xi_mm from P(k)</span>
+
+	<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">rbins</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+		<span class="n">r</span> <span class="o">=</span> <span class="n">rbins</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+		<span class="n">hankel_pk</span> <span class="o">=</span> <span class="n">k</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">Pk</span> <span class="o">*</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">k</span><span class="o">*</span><span class="n">r</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">k</span><span class="o">*</span><span class="n">r</span><span class="p">))</span>
+		<span class="n">xi_mm</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">/</span><span class="p">(</span><span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">scipy</span><span class="o">.</span><span class="n">integrate</span><span class="o">.</span><span class="n">simps</span><span class="p">(</span><span class="n">hankel_pk</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">k</span><span class="p">)</span>
+
+	<span class="k">return</span> <span class="n">rbins</span><span class="p">,</span> <span class="n">b_g</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">xi_mm</span><span class="p">,</span> <span class="n">xi_mm</span></div>
+	
+
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../compute_hod_old.html#compute_hod_old.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
+	<span class="n">monte_carlo</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">montecarlo</span>
+
+
+	<span class="c1">## read HOD parameters</span>
+
+	<span class="n">myconfigparser</span> <span class="o">=</span> <span class="n">configparser</span><span class="o">.</span><span class="n">ConfigParser</span><span class="p">()</span>
+	<span class="n">myconfigparser</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">hod_params_path</span><span class="p">)</span>
+	<span class="n">params</span> <span class="o">=</span> <span class="n">myconfigparser</span><span class="p">[</span><span class="s1">&#39;params&#39;</span><span class="p">]</span>
+
+	<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;mass function: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">mass_fun_path</span><span class="p">))</span>
+
+	<span class="n">f_cen</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;f_cen&#39;</span><span class="p">])</span>
+	<span class="n">siglogM</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;siglogM&#39;</span><span class="p">])</span>
+	<span class="n">alpha</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;alpha&#39;</span><span class="p">])</span>
+	<span class="n">input_ngal</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;ngal&#39;</span><span class="p">])</span>
+	<span class="n">M0_over_M1</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;m0_over_m1&#39;</span><span class="p">])</span>
+	<span class="n">M1_over_Mmin</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;m1_over_mmin&#39;</span><span class="p">])</span>
+	<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;HOD parameters:&quot;</span><span class="p">,</span><span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+	<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">input_ngal = </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">input_ngal</span><span class="p">),</span><span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+	<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">M1_over_Mmin = </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">M1_over_Mmin</span><span class="p">),</span><span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+
+
+	<span class="c1">## read cosmological params, compute linear Pk with CAMB</span>
+
+	<span class="c1">#import config</span>
+	<span class="c1">#cf = config.AbacusConfigFile(args.header_file)</span>
+	<span class="c1">#omega_m = cf.OmegaNow_m # at z=redshift</span>
+	<span class="c1">#redshift = cf.redshift</span>
+	<span class="c1">#sigma_8 = cf.sigma_8</span>
+	<span class="c1">#ns = cf.ns</span>
+	<span class="c1">#ombh2 = cf.ombh2</span>
+	<span class="c1">#omch2 = cf.omch2</span>
+	<span class="c1">#w0 = cf.w0</span>
+	<span class="c1">#H0 = cf.H0</span>
+
+	<span class="n">omegam_bolshoi</span> <span class="o">=</span> <span class="mf">0.27</span>
+	<span class="n">redshift_bolshoi</span> <span class="o">=</span> <span class="mf">0.1</span>
+	<span class="n">sigma8_bolshoi</span> <span class="o">=</span> <span class="mf">0.82</span>
+	<span class="n">H0_bolshoi</span> <span class="o">=</span> <span class="mf">70.</span>
+	<span class="n">ns_bolshoi</span> <span class="o">=</span> <span class="mf">0.95</span>
+	<span class="n">omegab_bolshoi</span> <span class="o">=</span> <span class="mf">0.0469</span>
+	<span class="n">h_bolshoi</span> <span class="o">=</span> <span class="n">H0_bolshoi</span><span class="o">/</span><span class="mf">100.</span>
+	<span class="n">omegac_bolshoi</span> <span class="o">=</span> <span class="n">omegam_bolshoi</span><span class="o">-</span><span class="n">omegab_bolshoi</span>
+	<span class="n">w0_bolshoi</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span>
+
+	<span class="c1">## (unneeded)</span>
+	<span class="c1">#omegamnow_bolshoi = omegam_bolshoi*(1.0+redshift_bolshoi)**3 / \</span>
+	<span class="c1">#					( (1.0 - omegam_bolshoi) + omegam_bolshoi*(1.0+redshift_bolshoi)**3 )</span>
+	<span class="c1">#print(&quot;omega_mnow (bolshoi) = {}&quot;.format(omegamnow_bolshoi))</span>
+
+	<span class="n">omega_m</span> <span class="o">=</span> <span class="n">omegam_bolshoi</span>
+	<span class="n">redshift</span> <span class="o">=</span> <span class="n">redshift_bolshoi</span>
+	<span class="n">sigma_8</span> <span class="o">=</span> <span class="n">sigma8_bolshoi</span>
+	<span class="n">ns</span> <span class="o">=</span> <span class="n">ns_bolshoi</span>
+	<span class="n">ombh2</span> <span class="o">=</span> <span class="n">omegab_bolshoi</span><span class="o">*</span><span class="n">h_bolshoi</span><span class="o">**</span><span class="mi">2</span>
+	<span class="n">omch2</span> <span class="o">=</span> <span class="n">omegac_bolshoi</span><span class="o">*</span><span class="n">h_bolshoi</span><span class="o">**</span><span class="mi">2</span>
+	<span class="n">w0</span> <span class="o">=</span> <span class="n">w0_bolshoi</span>
+	<span class="n">H0</span> <span class="o">=</span> <span class="n">H0_bolshoi</span>
+	<span class="n">h</span> <span class="o">=</span> <span class="n">H0</span><span class="o">/</span><span class="mf">100.</span>
+	
+	<span class="kn">from</span> <span class="nn">colossus.cosmology</span> <span class="k">import</span> <span class="n">cosmology</span>
+	<span class="n">cosmo</span> <span class="o">=</span> <span class="n">cosmology</span><span class="o">.</span><span class="n">setCosmology</span><span class="p">(</span><span class="s1">&#39;bolshoi&#39;</span><span class="p">)</span>
+
+
+	<span class="c1">## read mass functions</span>
+	<span class="n">mass_tab</span><span class="p">,</span> <span class="n">massfun_tab</span><span class="p">,</span> <span class="n">bias_tab</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">mass_fun_path</span><span class="p">,</span> <span class="n">unpack</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+	
+	<span class="c1">#mass_tab *= h</span>
+	<span class="c1">#massfun_tab *= h**(-4.)</span>
+
+
+	<span class="c1">## convenience functions for mass function fitting formulae</span>
+
+	<span class="n">dndm</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">M</span><span class="p">:</span> <span class="n">dndm_tinker</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="n">redshift</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">P</span><span class="o">=</span><span class="n">P</span><span class="p">,</span> <span class="n">Omega_M</span><span class="o">=</span><span class="n">omega_m</span><span class="p">)</span>
+	<span class="n">dndm_all</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">M</span><span class="p">:</span> <span class="n">dndm_tinker_all</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="n">redshift</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">P</span><span class="o">=</span><span class="n">P</span><span class="p">,</span> <span class="n">Omega_M</span><span class="o">=</span><span class="n">omega_m</span><span class="p">)</span>
+	
+
+	<span class="c1">## find HOD parameters</span>
+
+	<span class="n">logMmin</span><span class="p">,</span> <span class="n">logM0</span><span class="p">,</span> <span class="n">logM1</span> <span class="o">=</span> <span class="n">compute_HOD_parameters</span><span class="p">(</span><span class="n">ngal</span><span class="o">=</span><span class="n">input_ngal</span><span class="p">,</span>
+													<span class="n">siglogM</span><span class="o">=</span><span class="n">siglogM</span><span class="p">,</span>
+													<span class="n">M0_over_M1</span><span class="o">=</span><span class="n">M0_over_M1</span><span class="p">,</span>
+													<span class="n">M1_over_Mmin</span><span class="o">=</span><span class="n">M1_over_Mmin</span><span class="p">,</span>
+													<span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">,</span>
+													<span class="n">f_cen</span><span class="o">=</span><span class="n">f_cen</span><span class="p">,</span>
+													<span class="n">mass_tabulated</span><span class="o">=</span><span class="n">mass_tab</span><span class="p">,</span>
+													<span class="n">massfun_tabulated</span><span class="o">=</span><span class="n">massfun_tab</span><span class="p">)</span>
+	<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;logMmin: </span><span class="si">{}</span><span class="se">\n</span><span class="s2">logM0: </span><span class="si">{}</span><span class="se">\n</span><span class="s2">logM1: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">logMmin</span><span class="p">,</span><span class="n">logM0</span><span class="p">,</span><span class="n">logM1</span><span class="p">),</span><span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+
+
+	<span class="c1">## convert h units</span>
+	<span class="c1">## TODO [*should* be done before finding HOD parameters, but this is to check a bug...]</span>
+
+	<span class="n">mass_tab</span> <span class="o">*=</span> <span class="n">h</span>
+	<span class="n">massfun_tab</span> <span class="o">*=</span> <span class="n">h</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mf">4.</span><span class="p">)</span>
+
+	<span class="kn">import</span> <span class="nn">colossus.lss.mass_function</span> <span class="k">as</span> <span class="nn">colossus_mf</span>
+	<span class="n">colossus_dndm</span> <span class="o">=</span> <span class="n">colossus_mf</span><span class="o">.</span><span class="n">massFunction</span><span class="p">(</span><span class="n">mass_tab</span><span class="p">,</span> <span class="n">redshift</span><span class="p">,</span>
+											 <span class="n">mdef</span><span class="o">=</span><span class="s1">&#39;200m&#39;</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s1">&#39;tinker08&#39;</span><span class="p">,</span> <span class="n">q_out</span><span class="o">=</span><span class="s1">&#39;dndlnM&#39;</span><span class="p">)</span>
+	<span class="n">colossus_dndm</span> <span class="o">/=</span> <span class="n">mass_tab</span>
+
+
+	<span class="c1">## compute (linear) power spectrum</span>
+	
+	<span class="c1">#k, P = camb_linear_pk(ombh2=ombh2, omch2=omch2, H0=H0, ns=ns, w0=w0,</span>
+	<span class="c1">#					sigma8=sigma_8, redshift=redshift)</span>
+
+	<span class="n">k</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logspace</span><span class="p">(</span><span class="o">-</span><span class="mf">5.0</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="mi">4096</span><span class="p">)</span>
+	<span class="n">P</span> <span class="o">=</span> <span class="n">cosmo</span><span class="o">.</span><span class="n">matterPowerSpectrum</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">z</span><span class="o">=</span><span class="n">redshift</span><span class="p">,</span><span class="n">model</span><span class="o">=</span><span class="s1">&#39;eisenstein98&#39;</span><span class="p">)</span>
+	<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;redshift = </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">redshift</span><span class="p">))</span>
+
+	<span class="c1">## plot NFW convolution profile</span>
+
+	<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+
+	<span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">1.0e-3</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+	<span class="n">c</span> <span class="o">=</span> <span class="mf">10.0</span>
+	<span class="n">Fconv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+	<span class="n">NFW</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+	<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+		<span class="n">Fconv</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">differential_pair_count_NFW</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">c</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span>
+		<span class="n">NFW</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">NFW_profile</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">c</span><span class="p">)</span>
+	<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;F_ss normalization = </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">scipy</span><span class="o">.</span><span class="n">integrate</span><span class="o">.</span><span class="n">simps</span><span class="p">(</span><span class="n">Fconv</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">)))</span>
+	<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;F_cs normalization = </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">scipy</span><span class="o">.</span><span class="n">integrate</span><span class="o">.</span><span class="n">simps</span><span class="p">(</span><span class="n">NFW</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">)))</span>
+	<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;F_ss+cs normalization = </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">scipy</span><span class="o">.</span><span class="n">integrate</span><span class="o">.</span><span class="n">simps</span><span class="p">(</span><span class="n">NFW</span> <span class="o">+</span> <span class="n">Fconv</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">)))</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">Fconv</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;NFW convolution&#39;</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">NFW</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;NFW&#39;</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s1">&#39;best&#39;</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;NFW_convolution.pdf&#39;</span><span class="p">)</span>
+
+
+	<span class="c1">## plot halo bias functions</span>
+
+	<span class="n">ying_M</span><span class="p">,</span> <span class="n">ying_massfun</span><span class="p">,</span> <span class="n">ying_halobias</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="s1">&#39;halostat_bolshoi.txt&#39;</span><span class="p">,</span><span class="n">unpack</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+	<span class="n">tinker_halobias</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">ying_M</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+	<span class="n">ying_thiscode_halobias</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">ying_M</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+	<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ying_M</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+		<span class="n">tinker_halobias</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">compute_linear_bias</span><span class="p">(</span><span class="n">ying_M</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">k</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">omega_m</span><span class="o">=</span><span class="n">omega_m</span><span class="p">)</span>
+		<span class="n">ying_thiscode_halobias</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">compute_linear_bias_ying</span><span class="p">(</span><span class="n">ying_M</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">k</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">omega_m</span><span class="o">=</span><span class="n">omega_m</span><span class="p">)</span>
+
+	<span class="kn">import</span> <span class="nn">colossus.lss.bias</span> <span class="k">as</span> <span class="nn">colossus_bias</span>
+	<span class="n">colossus_halobias</span> <span class="o">=</span> <span class="n">colossus_bias</span><span class="o">.</span><span class="n">haloBias</span><span class="p">(</span><span class="n">ying_M</span><span class="p">,</span> <span class="n">redshift</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s1">&#39;tinker10&#39;</span><span class="p">,</span> <span class="n">mdef</span><span class="o">=</span><span class="s1">&#39;200m&#39;</span><span class="p">)</span>
+
+	<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+
+	<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ying_M</span><span class="p">,</span> <span class="n">ying_halobias</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;ying&#39;</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ying_M</span><span class="p">,</span> <span class="n">tinker_halobias</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;tinker&#39;</span><span class="p">)</span>
+	<span class="c1">#plt.plot(ying_M, colossus_halobias, label=&#39;colossus&#39;)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ying_M</span><span class="p">,</span> <span class="n">ying_thiscode_halobias</span><span class="p">,</span> <span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;ying (my code)&#39;</span><span class="p">)</span>
+	<span class="c1">#plt.plot(ying_M, tinker_halobias/ying_halobias, label=&#39;ratio to ying&#39;)</span>
+	<span class="c1">#plt.plot(ying_M, tinker_halobias/colossus_halobias, label=&#39;ratio to colossus&#39;)</span>
+	<span class="c1">#plt.plot(ying_M, tinker_halobias/ying_thiscode_halobias, &#39;--&#39;, label=&#39;ratio to ying (my code)&#39;)</span>
+
+	<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="mf">10.</span><span class="o">**</span><span class="p">(</span><span class="mf">12.75</span><span class="p">),</span> <span class="mf">10.</span><span class="o">**</span><span class="p">(</span><span class="mf">15.</span><span class="p">))</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">9.</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">xscale</span><span class="p">(</span><span class="s1">&#39;log&#39;</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;halo mass ($M_{\odot} \, h^{-1}$)&#39;</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s1">&#39;best&#39;</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;bias function comparison&#39;</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;analytic_halobias.pdf&#39;</span><span class="p">)</span>
+
+
+	<span class="c1">## plot halo mass function</span>
+
+	<span class="n">tinker_massfun</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">mass_tab</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+	<span class="n">tinker_sigma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">mass_tab</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+	<span class="n">tinker_f_sigma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">mass_tab</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+	<span class="n">tinker_dlnsigmainv_dM</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">mass_tab</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+	<span class="n">peak_height</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">mass_tab</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+	<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">mass_tab</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+		<span class="n">sigma</span><span class="p">,</span> <span class="n">f_sigma</span><span class="p">,</span> <span class="n">rho_mean_over_M</span><span class="p">,</span> <span class="n">dlnsigmainv_dM</span> <span class="o">=</span> <span class="n">dndm_all</span><span class="p">(</span><span class="n">mass_tab</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> 
+		<span class="n">peak_height</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">compute_peak_height</span><span class="p">(</span><span class="n">mass_tab</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">k</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">omega_m</span><span class="p">)</span>
+		<span class="n">tinker_sigma</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">sigma</span>
+		<span class="n">tinker_massfun</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">f_sigma</span><span class="o">*</span><span class="n">rho_mean_over_M</span><span class="o">*</span><span class="n">dlnsigmainv_dM</span>
+		<span class="n">tinker_f_sigma</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">f_sigma</span>
+		<span class="n">tinker_dlnsigmainv_dM</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">dlnsigmainv_dM</span>
+
+	<span class="c1"># w1_mass, w1_mf = np.loadtxt(&#39;hmf_wibking_h1.0.txt&#39;, unpack=True)</span>
+	<span class="c1"># w07_mass, w07_mf = np.loadtxt(&#39;hmf_wibking_h0.7.txt&#39;, unpack=True)</span>
+
+	<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+
+	<span class="c1">#plt.plot(mass_tab, massfun_tab, label=&#39;input dn/dM&#39;)</span>
+	<span class="c1">#plt.plot(mass_tab, tinker_massfun, label=&#39;tinker formula dn/dM&#39;)</span>
+	<span class="c1">#plt.plot(mass_tab, colossus_dndm, label=&#39;colossus&#39;)</span>
+
+	<span class="kn">import</span> <span class="nn">colossus.lss.peaks</span> <span class="k">as</span> <span class="nn">peaks</span>
+	<span class="n">colossus_peak_height</span> <span class="o">=</span> <span class="n">peaks</span><span class="o">.</span><span class="n">peakHeight</span><span class="p">(</span><span class="n">mass_tab</span><span class="p">,</span> <span class="n">redshift</span><span class="p">)</span>
+
+	<span class="c1">#plt.plot(mass_tab, peak_height, label=r&#39;$\nu(M)$&#39;)</span>
+	<span class="c1">#plt.plot(mass_tab, colossus_peak_height, label=r&#39;$\nu(M)$ (colossus)&#39;)</span>
+
+	<span class="c1">#plt.plot(mass_tab, tinker_f_sigma, label=r&#39;tinker $f(\sigma)$&#39;)</span>
+	<span class="c1">#plt.plot(mass_tab, tinker_dlnsigmainv_dM, label=r&#39;tinker $ d \ln f^{-1} / dM$&#39;)</span>
+
+	<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">mass_tab</span><span class="p">,</span> <span class="n">tinker_massfun</span><span class="o">/</span><span class="n">massfun_tab</span><span class="p">,</span> <span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;ratio to ying&#39;</span><span class="p">)</span> 
+	<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">mass_tab</span><span class="p">,</span> <span class="n">tinker_massfun</span><span class="o">/</span><span class="n">colossus_dndm</span><span class="p">,</span> <span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;ratio to colossus&#39;</span><span class="p">)</span> 
+
+	<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="mf">1.0e10</span><span class="p">,</span> <span class="mf">5.0e15</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">xscale</span><span class="p">(</span><span class="s1">&#39;log&#39;</span><span class="p">)</span>
+	<span class="c1">#plt.yscale(&#39;log&#39;)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$d n / d M$&#39;</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;halo mass ($M_{\odot} \, h^{-1}$)&#39;</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s1">&#39;best&#39;</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;mass function comparison&#39;</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;analytic_Massfun.pdf&#39;</span><span class="p">)</span>
+
+
+	<span class="c1">## compute 1-halo xi_gg</span>
+
+	<span class="n">M0</span> <span class="o">=</span> <span class="mf">10.</span><span class="o">**</span><span class="p">(</span><span class="n">logM0</span><span class="p">)</span>
+	<span class="n">M1</span> <span class="o">=</span> <span class="mf">10.</span><span class="o">**</span><span class="p">(</span><span class="n">logM1</span><span class="p">)</span>
+
+	<span class="k">def</span> <span class="nf">Ncen_of_M</span><span class="p">(</span><span class="n">M</span><span class="p">):</span>
+		<span class="k">return</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">scipy</span><span class="o">.</span><span class="n">special</span><span class="o">.</span><span class="n">erf</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">M</span><span class="p">)</span> <span class="o">-</span> <span class="n">logMmin</span><span class="p">)</span> <span class="o">/</span> <span class="n">siglogM</span><span class="p">))</span>
+		
+	<span class="k">def</span> <span class="nf">Nsat_of_M</span><span class="p">(</span><span class="n">M</span><span class="p">):</span>
+		<span class="n">Nsat</span> <span class="o">=</span> <span class="mf">0.</span>
+		<span class="k">if</span> <span class="n">M</span> <span class="o">&gt;</span> <span class="n">M0</span><span class="p">:</span>
+				<span class="c1">#Nsat = Ncen_of_M(M) * ( ((M - M0)/M1)**alpha )</span>
+				<span class="n">Nsat</span> <span class="o">=</span> <span class="p">(</span> <span class="p">((</span><span class="n">M</span> <span class="o">-</span> <span class="n">M0</span><span class="p">)</span><span class="o">/</span><span class="n">M1</span><span class="p">)</span><span class="o">**</span><span class="n">alpha</span> <span class="p">)</span>
+		<span class="k">return</span> <span class="n">Nsat</span>
+
+	<span class="k">def</span> <span class="nf">global_N_of_M</span><span class="p">(</span><span class="n">M</span><span class="p">):</span>
+		<span class="n">Ncen</span> <span class="o">=</span> <span class="n">Ncen_of_M</span><span class="p">(</span><span class="n">M</span><span class="p">)</span>
+		<span class="n">Nsat</span> <span class="o">=</span> <span class="n">Nsat_of_M</span><span class="p">(</span><span class="n">M</span><span class="p">)</span>
+		<span class="k">return</span> <span class="n">Ncen</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">Nsat</span><span class="p">)</span>
+
+
+	<span class="c1">## plot N(M)</span>
+
+	<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+	<span class="n">M</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logspace</span><span class="p">(</span><span class="mf">10.</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="mf">5.0e15</span><span class="p">),</span> <span class="mi">50</span><span class="p">)</span>
+	<span class="n">ncen_tab</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">M</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+	<span class="n">nsat_tab</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">M</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+	<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">M</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+		<span class="n">ncen_tab</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">Ncen_of_M</span><span class="p">(</span><span class="n">M</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+		<span class="n">nsat_tab</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">Nsat_of_M</span><span class="p">(</span><span class="n">M</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">ncen_tab</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;ncen&#39;</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">nsat_tab</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;nsat (no factor of Ncen included)&#39;</span><span class="p">)</span>
+	<span class="n">hodtab_mass</span><span class="p">,</span> <span class="n">hodtab_ncen</span><span class="p">,</span> <span class="n">hodtab_nsat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="s1">&#39;hod_wibking.txt&#39;</span><span class="p">,</span> <span class="n">unpack</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">hodtab_mass</span><span class="p">,</span> <span class="n">hodtab_ncen</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;ying ncen&#39;</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">hodtab_mass</span><span class="p">,</span> <span class="n">hodtab_nsat</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;ying nsat&#39;</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">100.</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="mf">1e12</span><span class="p">,</span> <span class="mf">5e15</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">xscale</span><span class="p">(</span><span class="s1">&#39;log&#39;</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">yscale</span><span class="p">(</span><span class="s1">&#39;log&#39;</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;halo mass ($M_{\odot} \, h^{-1}$)&#39;</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;halo occupation&#39;</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s1">&#39;best&#39;</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;analytic_HOD.pdf&#39;</span><span class="p">)</span>
+
+	
+	<span class="c1">## compute correlation functions</span>
+
+	<span class="n">rbins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logspace</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span> <span class="c1"># r bins</span>
+
+	<span class="n">cm_mass</span><span class="p">,</span> <span class="n">cm_cvir</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">cm_relation_path</span><span class="p">,</span> <span class="n">unpack</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+	<span class="n">cM_interpolated</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">interpolate</span><span class="o">.</span><span class="n">interp1d</span><span class="p">(</span><span class="n">cm_mass</span><span class="p">,</span> <span class="n">cm_cvir</span><span class="p">,</span> <span class="n">bounds_error</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+													<span class="n">fill_value</span><span class="o">=</span><span class="p">(</span><span class="n">cm_cvir</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">cm_cvir</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+
+	<span class="n">r</span><span class="p">,</span> <span class="n">xi_gg1</span><span class="p">,</span> <span class="n">xi_gg1cs</span><span class="p">,</span> <span class="n">xi_gg1ss</span> <span class="o">=</span> <span class="n">compute_xi_1halo</span><span class="p">(</span><span class="n">rbins</span><span class="p">,</span> <span class="n">global_N_of_M</span><span class="p">,</span>
+					 <span class="n">Ncen_of_M</span><span class="p">,</span> <span class="n">Nsat_of_M</span><span class="p">,</span>
+					 <span class="n">cM</span><span class="o">=</span><span class="n">cM_interpolated</span><span class="p">,</span> <span class="n">dndm</span><span class="o">=</span><span class="n">massfun_tab</span><span class="p">,</span> <span class="n">mass_tab</span><span class="o">=</span><span class="n">mass_tab</span><span class="p">,</span>
+					 <span class="n">Omega_M</span><span class="o">=</span><span class="n">omega_m</span><span class="p">,</span> <span class="n">redshift</span><span class="o">=</span><span class="n">redshift</span><span class="p">)</span>
+	
+	<span class="n">xigg1cs_integral</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">integrate</span><span class="o">.</span><span class="n">trapz</span><span class="p">(</span><span class="n">xi_gg1cs</span><span class="o">*</span><span class="n">r</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">r</span><span class="p">)</span>
+	<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;xigg1cs_integral = </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">xigg1cs_integral</span><span class="p">))</span>
+
+	<span class="k">if</span> <span class="n">monte_carlo</span><span class="p">:</span>
+		<span class="n">rmc</span><span class="p">,</span> <span class="n">xi_1halo_mc</span><span class="p">,</span> <span class="n">xi_cs_mc</span><span class="p">,</span> <span class="n">xi_ss_mc</span> <span class="o">=</span> <span class="n">monte_carlo_1halo</span><span class="p">(</span><span class="n">rbins</span><span class="p">,</span> <span class="n">Ncen_of_M</span><span class="p">,</span> <span class="n">Nsat_of_M</span><span class="p">,</span>\
+				 <span class="n">cM</span><span class="o">=</span><span class="n">cM_interpolated</span><span class="p">,</span> <span class="n">dndm</span><span class="o">=</span><span class="n">massfun_tab</span><span class="p">,</span>  <span class="n">mass_tab</span> <span class="o">=</span> <span class="n">mass_tab</span><span class="p">,</span>
+				 <span class="n">Omega_M</span><span class="o">=</span><span class="n">omega_m</span><span class="p">,</span> <span class="n">redshift</span><span class="o">=</span><span class="n">redshift</span><span class="p">)</span>
+
+	<span class="n">r2</span><span class="p">,</span> <span class="n">xi_gg2</span><span class="p">,</span> <span class="n">xi_mm</span> <span class="o">=</span> <span class="n">compute_xi_2halo</span><span class="p">(</span><span class="n">rbins</span><span class="p">,</span> <span class="n">global_N_of_M</span><span class="p">,</span> <span class="n">redshift</span><span class="o">=</span><span class="n">redshift</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">Pk</span><span class="o">=</span><span class="n">P</span><span class="p">,</span>\
+						<span class="n">dndm</span><span class="o">=</span><span class="n">massfun_tab</span><span class="p">,</span> <span class="n">mass_tab</span><span class="o">=</span><span class="n">mass_tab</span><span class="p">,</span> <span class="n">Omega_M</span><span class="o">=</span><span class="n">omega_m</span><span class="p">,</span> <span class="n">biasfun</span><span class="o">=</span><span class="n">bias_tab</span><span class="p">)</span>
+
+
+	<span class="c1">## plot correlation functions</span>
+
+	<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+
+	<span class="c1">#	plt.plot(r,xi_gg1,&#39;--&#39;,label=&#39;1-halo&#39;)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="n">xi_gg1cs</span><span class="p">,</span><span class="s1">&#39;-.&#39;</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;1-halo central-satellite&#39;</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="n">xi_gg1ss</span><span class="p">,</span><span class="s1">&#39;--&#39;</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;1-halo satellite-satellite&#39;</span><span class="p">)</span>
+
+	<span class="k">if</span> <span class="n">monte_carlo</span><span class="p">:</span>
+		<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">rmc</span><span class="p">,</span><span class="n">xi_1halo_mc</span><span class="p">,</span><span class="s1">&#39;-.&#39;</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;1-halo monte carlo (cs+ss)&#39;</span><span class="p">)</span>
+		<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">rmc</span><span class="p">,</span><span class="n">xi_cs_mc</span><span class="p">,</span><span class="s1">&#39;-.&#39;</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;1-halo monte carlo (cs)&#39;</span><span class="p">)</span>
+		<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">rmc</span><span class="p">,</span><span class="n">xi_ss_mc</span><span class="p">,</span><span class="s1">&#39;-.&#39;</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;1-halo monte carlo (ss)&#39;</span><span class="p">)</span>
+		<span class="nb">print</span><span class="p">(</span><span class="n">xi_1halo_mc</span><span class="p">)</span>
+
+	<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">r2</span><span class="p">,</span><span class="n">xi_gg2</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;2-halo analytic&#39;</span><span class="p">)</span>
+	
+
+	<span class="k">def</span> <span class="nf">interpolate_or_nan</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">):</span>
+		<span class="n">interpolator</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">interpolate</span><span class="o">.</span><span class="n">interp1d</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">)</span>
+		<span class="n">xmin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+		<span class="n">xmax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+		<span class="k">def</span> <span class="nf">interp_fun</span><span class="p">(</span><span class="n">z</span><span class="p">):</span>
+				<span class="k">if</span> <span class="n">z</span> <span class="o">&gt;=</span> <span class="n">xmin</span> <span class="ow">and</span> <span class="n">z</span> <span class="o">&lt;=</span> <span class="n">xmax</span><span class="p">:</span>
+						<span class="k">return</span> <span class="n">interpolator</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
+				<span class="k">else</span><span class="p">:</span>
+						<span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">NaN</span>
+		<span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">vectorize</span><span class="p">(</span><span class="n">interp_fun</span><span class="p">)</span>	
+		
+	<span class="n">xi</span> <span class="o">=</span> <span class="n">xi_gg1</span> <span class="o">+</span> <span class="n">xi_gg2</span>
+	<span class="c1"># plt.plot(r, xi, &#39;-&#39;, label=&#39;analytic HOD&#39;, color=&#39;black&#39;)</span>
+
+	<span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">comparison_plot</span><span class="p">:</span>
+		<span class="n">r_comp</span><span class="p">,</span><span class="n">xi_comp</span><span class="p">,</span><span class="n">xi_cs_comp</span><span class="p">,</span><span class="n">xi_ss_comp</span><span class="p">,</span><span class="n">xi_2h_comp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">comparison_plot</span><span class="p">,</span> <span class="n">unpack</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+		<span class="c1">#plt.plot(r_comp, xi_comp, label=&#39;comparison function&#39;, color=&#39;red&#39;)</span>
+		<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">r_comp</span><span class="p">,</span> <span class="n">xi_cs_comp</span><span class="p">,</span> <span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;1-halo cs comparison&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">)</span>
+		<span class="n">xi_cs_comp_integral</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">integrate</span><span class="o">.</span><span class="n">trapz</span><span class="p">(</span><span class="n">xi_cs_comp</span><span class="o">*</span><span class="n">r_comp</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">r_comp</span><span class="p">)</span>
+		<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;xi_cs_comp_integral = </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">xi_cs_comp_integral</span><span class="p">))</span>
+		<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">r_comp</span><span class="p">,</span> <span class="n">xi_ss_comp</span><span class="p">,</span> <span class="s1">&#39;-.&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;1-halo ss comparison&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">)</span>
+		<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">r_comp</span><span class="p">,</span> <span class="n">xi_2h_comp</span><span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;2-halo comparison&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">)</span>
+
+	<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s1">&#39;best&#39;</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">xscale</span><span class="p">(</span><span class="s1">&#39;log&#39;</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">yscale</span><span class="p">(</span><span class="s1">&#39;log&#39;</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">1.0e5</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="n">rbins</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">rbins</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;analytic_xi_gg.pdf&#39;</span><span class="p">)</span>
+
+	<span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">comparison_plot</span><span class="p">:</span>
+		<span class="n">xi_comp_interp</span> <span class="o">=</span> <span class="n">interpolate_or_nan</span><span class="p">(</span><span class="n">r_comp</span><span class="p">,</span> <span class="n">xi_comp</span><span class="p">)</span>
+		<span class="n">frac_diff</span> <span class="o">=</span> <span class="p">(</span><span class="n">xi</span><span class="o">/</span><span class="n">xi_comp_interp</span><span class="p">(</span><span class="n">r</span><span class="p">))</span> <span class="o">-</span> <span class="mf">1.0</span>
+
+		<span class="n">xi_cs_comp_interp</span> <span class="o">=</span> <span class="n">interpolate_or_nan</span><span class="p">(</span><span class="n">r_comp</span><span class="p">,</span> <span class="n">xi_cs_comp</span><span class="p">)</span>
+		<span class="n">xi_ss_comp_interp</span> <span class="o">=</span> <span class="n">interpolate_or_nan</span><span class="p">(</span><span class="n">r_comp</span><span class="p">,</span> <span class="n">xi_ss_comp</span><span class="p">)</span>
+		<span class="n">frac_diff_cs</span> <span class="o">=</span> <span class="p">(</span><span class="n">xi_gg1cs</span><span class="o">/</span><span class="n">xi_cs_comp_interp</span><span class="p">(</span><span class="n">r</span><span class="p">))</span> <span class="o">-</span> <span class="mf">1.0</span>
+		<span class="n">frac_diff_ss</span> <span class="o">=</span> <span class="p">(</span><span class="n">xi_gg1ss</span><span class="o">/</span><span class="n">xi_ss_comp_interp</span><span class="p">(</span><span class="n">r</span><span class="p">))</span> <span class="o">-</span> <span class="mf">1.0</span>
+
+		<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+		<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">frac_diff</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;comparison function&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">)</span>
+
+		<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">frac_diff_cs</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;central-satellite&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;green&#39;</span><span class="p">)</span>
+		<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">frac_diff_ss</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;satellite-satellite&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;blue&#39;</span><span class="p">)</span>
+
+		<span class="n">plt</span><span class="o">.</span><span class="n">xscale</span><span class="p">(</span><span class="s1">&#39;log&#39;</span><span class="p">)</span>
+		<span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="o">-</span><span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">)</span>
+		<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s1">&#39;best&#39;</span><span class="p">)</span>
+		<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;analytic_frac_diff.pdf&#39;</span><span class="p">)</span></div>
+		
+
+<span class="k">if</span> <span class="vm">__name__</span><span class="o">==</span><span class="s1">&#39;__main__&#39;</span><span class="p">:</span>                               
+	<span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+
+	<span class="c1"># parser.add_argument(&#39;header_file&#39;)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;cm_relation_path&#39;</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;mass_fun_path&#39;</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;bias_fun_path&#39;</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;hod_params_path&#39;</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--comparison_plot&#39;</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--centrals_only&#39;</span><span class="p">,</span><span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--montecarlo&#39;</span><span class="p">,</span><span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">)</span>
+
+	<span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+	<span class="n">main</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Ben Wibking
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

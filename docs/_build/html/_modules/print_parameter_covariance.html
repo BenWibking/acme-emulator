@@ -1,0 +1,436 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>print_parameter_covariance &mdash; ACME Emulator  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> ACME Emulator
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ACME Emulator</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">Module code</a> &raquo;</li>
+        
+      <li>print_parameter_covariance</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for print_parameter_covariance</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">argparse</span>
+
+<div class="viewcode-block" id="pretty_print_label"><a class="viewcode-back" href="../print_parameter_covariance.html#print_parameter_covariance.pretty_print_label">[docs]</a><span class="k">def</span> <span class="nf">pretty_print_label</span><span class="p">(</span><span class="n">label</span><span class="p">):</span>
+        <span class="n">pretty_print</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">pretty_print</span><span class="p">[</span><span class="s1">&#39;combined_om_s8&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;$\Delta \ln \sigma_8 \Omega_M^</span><span class="si">{0.3}</span><span class="s1">$&#39;</span>
+        <span class="n">pretty_print</span><span class="p">[</span><span class="s1">&#39;sigma_8&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;$\Delta \ln \sigma_8$&#39;</span>
+        <span class="n">pretty_print</span><span class="p">[</span><span class="s1">&#39;siglogM&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;$\Delta \ln \sigma_{\log M}$&#39;</span>
+        <span class="n">pretty_print</span><span class="p">[</span><span class="s1">&#39;q_env&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;$\Delta Q_</span><span class="si">{env}</span><span class="s1">$&#39;</span>
+        <span class="n">pretty_print</span><span class="p">[</span><span class="s1">&#39;ngal&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;$\Delta \ln n_</span><span class="si">{gal}</span><span class="s1">$&#39;</span>
+        <span class="n">pretty_print</span><span class="p">[</span><span class="s1">&#39;ncen&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;$\Delta \ln n_</span><span class="si">{cen}</span><span class="s1">$&#39;</span>
+        <span class="n">pretty_print</span><span class="p">[</span><span class="s1">&#39;alpha&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;$\Delta \ln \alpha$&#39;</span>
+        <span class="n">pretty_print</span><span class="p">[</span><span class="s1">&#39;M1_over_Mmin&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;$\Delta \ln \frac</span><span class="si">{M_1}</span><span class="s1">{M_</span><span class="si">{min}</span><span class="s1">}$&#39;</span>
+        <span class="n">pretty_print</span><span class="p">[</span><span class="s1">&#39;M0_over_M1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;$\Delta \ln \frac</span><span class="si">{M_0}{M_1}</span><span class="s1">$&#39;</span>
+        <span class="n">pretty_print</span><span class="p">[</span><span class="s1">&#39;H0&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;$\Delta \ln H_0$&#39;</span>
+        <span class="n">pretty_print</span><span class="p">[</span><span class="s1">&#39;Omega_M&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;$\Delta \ln \Omega_m$&#39;</span>
+        <span class="n">pretty_print</span><span class="p">[</span><span class="s1">&#39;del_gamma&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;$\Delta \gamma$&#39;</span>
+        <span class="n">pretty_print</span><span class="p">[</span><span class="s1">&#39;f_cen&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;$\Delta f_</span><span class="si">{cen}</span><span class="s1">$&#39;</span>
+        <span class="n">pretty_print</span><span class="p">[</span><span class="s1">&#39;A_conc&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;$\Delta \ln A_</span><span class="si">{conc}</span><span class="s1">$&#39;</span>
+        <span class="n">pretty_print</span><span class="p">[</span><span class="s1">&#39;delta_b&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;$\Delta B_</span><span class="si">{conc}</span><span class="s1">$&#39;</span>
+        <span class="n">pretty_print</span><span class="p">[</span><span class="s1">&#39;delta_c&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;$\Delta C_</span><span class="si">{conc}</span><span class="s1">$&#39;</span>
+        <span class="k">return</span> <span class="n">pretty_print</span><span class="p">[</span><span class="n">label</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="param_color"><a class="viewcode-back" href="../print_parameter_covariance.html#print_parameter_covariance.param_color">[docs]</a><span class="k">def</span> <span class="nf">param_color</span><span class="p">(</span><span class="n">label</span><span class="p">):</span>
+        <span class="n">color</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">color</span><span class="p">[</span><span class="s1">&#39;siglogM&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;green&#39;</span>
+        <span class="n">color</span><span class="p">[</span><span class="s1">&#39;ngal&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;green&#39;</span>
+        <span class="n">color</span><span class="p">[</span><span class="s1">&#39;ncen&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;green&#39;</span>
+        <span class="n">color</span><span class="p">[</span><span class="s1">&#39;alpha&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;green&#39;</span>
+        <span class="n">color</span><span class="p">[</span><span class="s1">&#39;M1_over_Mmin&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;green&#39;</span>
+        <span class="n">color</span><span class="p">[</span><span class="s1">&#39;M0_over_M1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;green&#39;</span>
+        <span class="n">color</span><span class="p">[</span><span class="s1">&#39;q_env&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;blue&#39;</span>
+        <span class="n">color</span><span class="p">[</span><span class="s1">&#39;del_gamma&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;blue&#39;</span>
+        <span class="n">color</span><span class="p">[</span><span class="s1">&#39;A_conc&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;blue&#39;</span>
+        <span class="n">color</span><span class="p">[</span><span class="s1">&#39;delta_b&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;blue&#39;</span>
+        <span class="n">color</span><span class="p">[</span><span class="s1">&#39;delta_c&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;blue&#39;</span>
+        <span class="n">color</span><span class="p">[</span><span class="s1">&#39;f_cen&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;blue&#39;</span>
+        <span class="n">color</span><span class="p">[</span><span class="s1">&#39;H0&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;black&#39;</span>
+        <span class="n">color</span><span class="p">[</span><span class="s1">&#39;Omega_M&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;black&#39;</span>
+        <span class="n">color</span><span class="p">[</span><span class="s1">&#39;sigma_8&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;black&#39;</span>
+        <span class="n">color</span><span class="p">[</span><span class="s1">&#39;combined_om_s8&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;black&#39;</span>
+        <span class="k">return</span> <span class="n">color</span><span class="p">[</span><span class="n">label</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="load_covariance_file"><a class="viewcode-back" href="../print_parameter_covariance.html#print_parameter_covariance.load_covariance_file">[docs]</a><span class="k">def</span> <span class="nf">load_covariance_file</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+	<span class="n">table</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+	<span class="k">return</span> <span class="n">table</span></div>
+
+<div class="viewcode-block" id="diagnose_condition"><a class="viewcode-back" href="../print_parameter_covariance.html#print_parameter_covariance.diagnose_condition">[docs]</a><span class="k">def</span> <span class="nf">diagnose_condition</span><span class="p">(</span><span class="n">matrix</span><span class="p">):</span>
+	<span class="c1"># check condition number -- if large (&gt;10e6), this indicates something went wrong</span>
+	<span class="c1"># rule of thumb: log10(condition) gives the number of decimal digits of precision loss</span>
+	<span class="c1"># if &gt;6 for single precision, all precision is lost; if &gt;15 for double precision, all precision is lost</span>
+	<span class="c1">#   (i.e. answers are completely meaningless)</span>
+	<span class="n">condition</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">cond</span><span class="p">(</span><span class="n">matrix</span><span class="p">)</span>
+	<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+	<span class="k">if</span> <span class="n">condition</span><span class="o">&gt;</span><span class="mf">1e6</span><span class="p">:</span>
+		<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;WARNING: bad condition number! these results are probably wrong!&quot;</span><span class="p">)</span>
+	<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;condition number of covariance matrix:&quot;</span><span class="p">,</span> <span class="n">condition</span><span class="p">)</span>
+	<span class="n">bits_lost</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log2</span><span class="p">(</span><span class="n">condition</span><span class="p">)</span>
+	<span class="n">single_bits_remaining</span> <span class="o">=</span> <span class="mf">32.0</span><span class="o">-</span><span class="n">bits_lost</span>
+	<span class="n">double_bits_remaining</span> <span class="o">=</span> <span class="mf">64.0</span><span class="o">-</span><span class="n">bits_lost</span>
+	<span class="n">single_digits_remaining</span> <span class="o">=</span> <span class="mf">6.0</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">condition</span><span class="p">)</span>
+	<span class="n">double_digits_remaining</span> <span class="o">=</span> <span class="mf">15.0</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">condition</span><span class="p">)</span>
+	<span class="k">if</span> <span class="n">double_bits_remaining</span><span class="o">&gt;</span><span class="mf">0.</span><span class="p">:</span>
+		<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;estimated decimal places of precision for double precision computations:&quot;</span><span class="p">,</span> <span class="n">double_digits_remaining</span><span class="p">)</span>
+	<span class="k">else</span><span class="p">:</span>
+		<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;WARNING: double-precision computations with this matrix are meaningless!&quot;</span><span class="p">)</span>
+	<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="print_covariance"><a class="viewcode-back" href="../print_parameter_covariance.html#print_parameter_covariance.print_covariance">[docs]</a><span class="k">def</span> <span class="nf">print_covariance</span><span class="p">(</span><span class="n">input_files</span><span class="p">,</span> <span class="n">output_file</span><span class="p">):</span>
+        <span class="n">tick_angle</span> <span class="o">=</span> <span class="mf">90.</span>
+        <span class="n">plot_colors</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;blue&#39;</span><span class="p">,</span> <span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="s1">&#39;black&#39;</span><span class="p">]</span>
+
+        <span class="n">cosmo_params</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;sigma_8&#39;</span><span class="p">,</span> <span class="s1">&#39;Omega_M&#39;</span><span class="p">]</span>
+
+        <span class="kn">import</span> <span class="nn">matplotlib</span>
+        <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+        <span class="kn">from</span> <span class="nn">matplotlib.patches</span> <span class="k">import</span> <span class="n">Ellipse</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">))</span>
+        <span class="n">set_of_file_data</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># N.B. input files must have the same dimensions</span>
+        <span class="k">for</span> <span class="n">input_file</span> <span class="ow">in</span> <span class="n">input_files</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;INPUT FILE:&quot;</span><span class="p">,</span><span class="n">input_file</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+                <span class="n">cov</span> <span class="o">=</span> <span class="n">load_covariance_file</span><span class="p">(</span><span class="n">input_file</span><span class="p">)</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">input_file</span><span class="p">,</span><span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                        <span class="n">line</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="n">params</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;*** (Fisher-matrix-estimated) marginalized uncertainties on parameters: ***&quot;</span><span class="p">)</span>
+                <span class="c1"># compute condition number and output diagnostic info</span>
+                <span class="n">diagnose_condition</span><span class="p">(</span><span class="n">cov</span><span class="p">)</span>
+
+                <span class="n">p</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">sigma_z_sq</span> <span class="o">=</span> <span class="p">[]</span>
+
+                <span class="n">param_limits</span> <span class="o">=</span> <span class="p">[(</span><span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">cov</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">i</span><span class="p">]),</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">cov</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">i</span><span class="p">]))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">cov</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span> <span class="c1"># 2-sigma contours</span>
+
+                <span class="c1"># compute ellipses</span>
+                <span class="c1"># reference: https://arxiv.org/pdf/0906.4123.pdf</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;*** uncertainty ellipses:&quot;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;*** (param_x) (param_y) (correlation) (slope)&quot;</span><span class="p">)</span>
+                <span class="n">ellipses</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">cov</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+                        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">):</span>
+                                <span class="n">xparam</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+                                <span class="n">yparam</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                                <span class="n">sigma_x_sq</span> <span class="o">=</span> <span class="n">cov</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">j</span><span class="p">]</span>
+                                <span class="n">sigma_y_sq</span> <span class="o">=</span> <span class="n">cov</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">i</span><span class="p">]</span>
+                                <span class="n">sigma_xy</span> <span class="o">=</span> <span class="n">cov</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span>
+                                <span class="n">term1</span> <span class="o">=</span> <span class="p">(</span><span class="n">sigma_x_sq</span> <span class="o">+</span> <span class="n">sigma_y_sq</span><span class="p">)</span><span class="o">/</span><span class="mf">2.0</span> 
+                                <span class="n">term2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span> <span class="p">((</span><span class="n">sigma_x_sq</span> <span class="o">-</span> <span class="n">sigma_y_sq</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="mf">4.0</span> <span class="o">+</span> <span class="n">sigma_xy</span><span class="o">**</span><span class="mi">2</span> <span class="p">)</span>
+                                <span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span> <span class="n">term1</span> <span class="o">+</span> <span class="n">term2</span> <span class="p">)</span>
+                                <span class="n">b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span> <span class="n">term1</span> <span class="o">-</span> <span class="n">term2</span> <span class="p">)</span>
+                                <span class="n">angle_radians</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="mf">2.0</span><span class="o">*</span><span class="n">sigma_xy</span><span class="p">,</span> <span class="n">sigma_x_sq</span> <span class="o">-</span> <span class="n">sigma_y_sq</span><span class="p">)</span><span class="o">/</span><span class="mf">2.0</span>
+                                <span class="n">angle_deg</span> <span class="o">=</span> <span class="n">angle_radians</span> <span class="o">*</span> <span class="mf">180.</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+                                <span class="n">slope</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tan</span><span class="p">(</span><span class="n">angle_radians</span><span class="p">)</span>
+                                <span class="n">ellipses</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">xparam</span><span class="p">,</span><span class="n">yparam</span><span class="p">,</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">,</span><span class="n">angle_deg</span><span class="p">))</span>
+                                <span class="n">corr</span> <span class="o">=</span> <span class="n">cov</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">cov</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">cov</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">j</span><span class="p">])</span>
+                                <span class="k">if</span> <span class="n">xparam</span> <span class="ow">in</span> <span class="n">cosmo_params</span> <span class="ow">and</span> <span class="n">yparam</span> <span class="ow">in</span> <span class="n">cosmo_params</span><span class="p">:</span>
+                                        <span class="k">if</span> <span class="n">xparam</span> <span class="o">==</span> <span class="s1">&#39;Omega_M&#39;</span> <span class="ow">and</span> <span class="n">yparam</span> <span class="o">==</span> <span class="s1">&#39;sigma_8&#39;</span><span class="p">:</span>
+                                                <span class="n">sigma_om_sq</span> <span class="o">=</span> <span class="n">sigma_x_sq</span>
+                                                <span class="n">sigma_s8_sq</span> <span class="o">=</span> <span class="n">sigma_y_sq</span>
+                                        <span class="k">elif</span> <span class="n">xparam</span> <span class="o">==</span> <span class="s1">&#39;sigma_8&#39;</span> <span class="ow">and</span> <span class="n">yparam</span> <span class="o">==</span> <span class="s1">&#39;Omega_M&#39;</span><span class="p">:</span>
+                                                <span class="n">sigma_s8_sq</span> <span class="o">=</span> <span class="n">sigma_x_sq</span>
+                                                <span class="n">sigma_om_sq</span> <span class="o">=</span> <span class="n">sigma_y_sq</span>
+                                        <span class="n">p</span> <span class="o">=</span> <span class="o">-</span><span class="n">sigma_xy</span> <span class="o">/</span> <span class="n">sigma_om_sq</span>
+                                        <span class="n">sigma_z_sq</span> <span class="o">=</span> <span class="p">(</span><span class="n">p</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="n">sigma_om_sq</span> <span class="o">+</span> <span class="n">sigma_s8_sq</span> <span class="o">+</span> <span class="mf">2.0</span><span class="o">*</span><span class="n">p</span><span class="o">*</span><span class="n">sigma_xy</span>
+
+                                <span class="nb">print</span><span class="p">(</span><span class="n">xparam</span><span class="p">,</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">,</span><span class="n">yparam</span><span class="p">,</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">,</span><span class="n">sigma_x_sq</span><span class="p">,</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">,</span><span class="n">sigma_y_sq</span><span class="p">,</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">,</span><span class="n">sigma_xy</span><span class="p">)</span><span class="c1">#&#39;\t&#39;,corr,&#39;\t&#39;,slope)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+                <span class="n">plot_color</span> <span class="o">=</span> <span class="n">plot_colors</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+                <span class="n">set_of_file_data</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">ellipses</span><span class="p">,</span><span class="n">cov</span><span class="p">,</span><span class="n">param_limits</span><span class="p">,</span><span class="n">plot_color</span><span class="p">))</span>
+                
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;*** marginalized parameter uncertainties&quot;</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">cov</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="s1">&#39;</span><span class="se">\t\t</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">cov</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">i</span><span class="p">]))</span> <span class="c1"># print sigma_i</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;best constrained parameter: sigma_8 * Om**</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">p</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">uncertainty: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">sigma_z_sq</span><span class="p">))</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+        <span class="c1"># ensure that all input files have the same dimensions</span>
+        <span class="n">dims</span> <span class="o">=</span> <span class="n">set_of_file_data</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span>
+        <span class="k">for</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">set_of_file_data</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+                <span class="n">ellipses</span><span class="p">,</span><span class="n">cov</span><span class="p">,</span><span class="n">param_limits</span><span class="p">,</span><span class="n">plot_color</span> <span class="o">=</span> <span class="n">data</span>
+                <span class="k">if</span><span class="p">(</span><span class="n">cov</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">dims</span><span class="p">):</span>
+                        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;input files do not have the same dimensions!&quot;</span><span class="p">)</span>
+
+        <span class="c1"># create subplots</span>
+        <span class="n">ellipses</span><span class="p">,</span><span class="n">cov</span><span class="p">,</span><span class="n">param_limits</span><span class="p">,</span><span class="n">plot_color</span> <span class="o">=</span> <span class="n">set_of_file_data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">subplots</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">cov</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+                <span class="n">row</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+                        <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot2grid</span><span class="p">((</span><span class="n">cov</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">cov</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">),</span><span class="n">aspect</span><span class="o">=</span><span class="s1">&#39;equal&#39;</span><span class="p">)</span>
+                        <span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="n">rotation</span><span class="o">=</span><span class="n">tick_angle</span><span class="p">)</span>
+                        <span class="n">plt</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="s1">&#39;both&#39;</span><span class="p">,</span><span class="n">which</span><span class="o">=</span><span class="s1">&#39;major&#39;</span><span class="p">,</span><span class="n">labelsize</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+                        <span class="n">plt</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="s1">&#39;both&#39;</span><span class="p">,</span><span class="n">which</span><span class="o">=</span><span class="s1">&#39;minor&#39;</span><span class="p">,</span><span class="n">labelsize</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+                        <span class="n">ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s1">&#39;auto&#39;</span><span class="p">)</span>
+                        <span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">matplotlib</span><span class="o">.</span><span class="n">ticker</span><span class="o">.</span><span class="n">MaxNLocator</span><span class="p">(</span><span class="n">nbins</span><span class="o">=</span><span class="mi">4</span><span class="p">))</span>
+                        <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">matplotlib</span><span class="o">.</span><span class="n">ticker</span><span class="o">.</span><span class="n">MaxNLocator</span><span class="p">(</span><span class="n">nbins</span><span class="o">=</span><span class="mi">4</span><span class="p">))</span>
+                        <span class="n">row</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+                <span class="n">subplots</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+
+        <span class="n">xlim</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">cov</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="n">ylim</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">cov</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="n">max_amp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">cov</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">set_of_file_data</span><span class="p">:</span>
+                <span class="n">ellipses</span><span class="p">,</span><span class="n">cov</span><span class="p">,</span><span class="n">param_limits</span><span class="p">,</span><span class="n">plot_color</span> <span class="o">=</span> <span class="n">data</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">cov</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+                        <span class="n">this_amp</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">/</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">cov</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">i</span><span class="p">]))</span>
+                        <span class="n">max_amp</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">this_amp</span><span class="p">,</span> <span class="n">max_amp</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+                                <span class="n">this_xlim</span> <span class="o">=</span> <span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">cov</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">j</span><span class="p">])</span>
+                                <span class="n">this_ylim</span> <span class="o">=</span> <span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">cov</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">i</span><span class="p">])</span>
+                                <span class="n">xlim</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">this_xlim</span><span class="p">,</span> <span class="n">xlim</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">])</span>
+                                <span class="n">ylim</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">this_ylim</span><span class="p">,</span> <span class="n">ylim</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">])</span>
+
+        <span class="c1"># plot ellipses (non-diagonal parameter covariances)</span>
+        <span class="k">for</span> <span class="n">file_data</span> <span class="ow">in</span> <span class="n">set_of_file_data</span><span class="p">:</span>
+                <span class="n">ellipses</span><span class="p">,</span><span class="n">cov</span><span class="p">,</span><span class="n">param_limits</span><span class="p">,</span><span class="n">plot_color</span> <span class="o">=</span> <span class="n">file_data</span> <span class="c1"># unpack file_data</span>
+                <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">xlabel</span><span class="p">,</span><span class="n">ylabel</span><span class="p">,</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">,</span><span class="n">angle_deg</span> <span class="ow">in</span> <span class="n">ellipses</span><span class="p">:</span>
+                        <span class="n">ax</span> <span class="o">=</span> <span class="n">subplots</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span>
+                        <span class="n">scales</span> <span class="o">=</span> <span class="p">[(</span><span class="mf">2.48</span><span class="p">,</span><span class="s1">&#39;red&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mf">1.52</span><span class="p">,</span><span class="s1">&#39;orange&#39;</span><span class="p">)]</span> <span class="c1"># 95%, 68% confidence ellipses</span>
+                        <span class="k">for</span> <span class="n">scale</span><span class="p">,</span><span class="n">face_color</span> <span class="ow">in</span> <span class="n">scales</span><span class="p">:</span>
+                                <span class="n">e</span> <span class="o">=</span> <span class="n">Ellipse</span><span class="p">(</span><span class="n">xy</span><span class="o">=</span><span class="p">[</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">],</span> <span class="n">width</span><span class="o">=</span><span class="n">a</span><span class="o">*</span><span class="n">scale</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="n">b</span><span class="o">*</span><span class="n">scale</span><span class="p">,</span> <span class="n">angle</span><span class="o">=</span><span class="n">angle_deg</span><span class="p">,</span>
+                                            <span class="n">color</span><span class="o">=</span><span class="n">plot_color</span><span class="p">)</span>
+                                <span class="n">e</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">(</span><span class="n">face_color</span><span class="p">)</span>
+                                <span class="n">e</span><span class="o">.</span><span class="n">set_alpha</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+                                <span class="n">ax</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+                        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="o">-</span><span class="n">xlim</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">],</span><span class="n">xlim</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">])</span>
+                        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="o">-</span><span class="n">ylim</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">],</span><span class="n">ylim</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">])</span>
+                        <span class="k">if</span> <span class="n">j</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                                <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_ticklabels</span><span class="p">([])</span>
+                                <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([])</span>
+                        <span class="k">else</span><span class="p">:</span>
+                                <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">pretty_print_label</span><span class="p">(</span><span class="n">ylabel</span><span class="p">),</span>
+                                              <span class="n">color</span><span class="o">=</span><span class="n">param_color</span><span class="p">(</span><span class="n">ylabel</span><span class="p">))</span>
+                                <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_label_coords</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)</span>
+                                <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">tick_left</span><span class="p">()</span>
+
+                        <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">cov</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                                <span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_ticklabels</span><span class="p">([])</span>
+                                <span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">([])</span>
+                        <span class="k">else</span><span class="p">:</span>
+                                <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="n">pretty_print_label</span><span class="p">(</span><span class="n">xlabel</span><span class="p">),</span>
+                                              <span class="n">color</span><span class="o">=</span><span class="n">param_color</span><span class="p">(</span><span class="n">xlabel</span><span class="p">))</span>
+                                <span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_label_coords</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span><span class="o">-</span><span class="mf">0.5</span><span class="p">)</span>
+                                <span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">tick_bottom</span><span class="p">()</span>
+
+        <span class="c1"># plot diagonal elements</span>
+        <span class="k">for</span> <span class="n">file_data</span> <span class="ow">in</span> <span class="n">set_of_file_data</span><span class="p">:</span>
+                <span class="n">ellipses</span><span class="p">,</span><span class="n">cov</span><span class="p">,</span><span class="n">param_limits</span><span class="p">,</span><span class="n">plot_color</span> <span class="o">=</span> <span class="n">file_data</span> <span class="c1"># unpack file_data</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">cov</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+                        <span class="n">ax</span> <span class="o">=</span> <span class="n">subplots</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">i</span><span class="p">]</span>
+                        <span class="n">sigma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">cov</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">i</span><span class="p">])</span>
+                        <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mf">4.0</span><span class="o">*</span><span class="n">sigma</span><span class="p">,</span> <span class="mf">4.0</span><span class="o">*</span><span class="n">sigma</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+                        <span class="n">fun</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">x</span><span class="o">/</span><span class="n">sigma</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">sigma</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">))</span>
+                        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">fun</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">plot_color</span><span class="p">)</span>
+                        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;$\sigma = </span><span class="si">%.3f</span><span class="s1">$&#39;</span> <span class="o">%</span> <span class="n">sigma</span><span class="p">,</span>
+                                     <span class="n">color</span><span class="o">=</span><span class="n">param_color</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+                        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="o">-</span><span class="n">xlim</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">i</span><span class="p">],</span><span class="n">xlim</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">i</span><span class="p">])</span>
+                        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="n">max_amp</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                        <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_ticklabels</span><span class="p">([])</span>
+                        <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([])</span>
+                        <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">tick_left</span><span class="p">()</span>
+
+                        <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="n">cov</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                                <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="n">pretty_print_label</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span>
+                                              <span class="n">color</span><span class="o">=</span><span class="n">param_color</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+                                <span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_label_coords</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span><span class="o">-</span><span class="mf">0.5</span><span class="p">)</span>
+                                <span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">tick_bottom</span><span class="p">()</span>
+                        <span class="k">else</span><span class="p">:</span>
+                                <span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_ticklabels</span><span class="p">([])</span>
+                                <span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">([])</span>
+
+        <span class="c1">#fig.tight_layout(pad=.8)</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">wspace</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span><span class="n">hspace</span><span class="o">=</span><span class="mf">0.</span><span class="p">)</span>
+        <span class="c1">#plt.suptitle(r&quot;Emulator forecast for galaxy-galaxy lensing+clustering&quot;)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">output_file</span><span class="p">)</span></div>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+        <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;output_file&#39;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;input_cov_files&#39;</span><span class="p">,</span><span class="n">nargs</span><span class="o">=</span><span class="s1">&#39;*&#39;</span><span class="p">,</span><span class="n">help</span><span class="o">=</span><span class="s1">&#39;txt file input for inverse Fisher matrix&#39;</span><span class="p">)</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+        
+        <span class="n">print_covariance</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">input_cov_files</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">output_file</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Ben Wibking
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
