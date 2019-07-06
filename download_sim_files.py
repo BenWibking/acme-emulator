@@ -18,9 +18,9 @@ from urllib.parse import urlparse, unquote
 from pathlib import PurePosixPath, Path
 
 parser = argparse.ArgumentParser()
-parser.add_argument('url')
-parser.add_argument('redshift_dir')
-parser.add_argument('download_path')
+parser.add_argument('--url', default='http://nbody.rc.fas.harvard.edu/public/AbacusCosmos/AbacusCosmos_720box_products/')
+parser.add_argument('--redshift_dir', default='z0.300/')
+parser.add_argument('--download_path', default='./AbacusCosmos')
 parser.add_argument('--dry-run', default=False, action='store_true')
 parser.add_argument('--phases', default=False, action='store_true')
 args = parser.parse_args()
