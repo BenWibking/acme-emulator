@@ -11,6 +11,8 @@ numba==0.41.0
 numpy==1.15.4
 pandas==0.23.4
 pathlib2==2.3.3
+progressbar=2.5
+pycurl==7.43.0.2
 pylatexenc==1.4
 pymultinest==2.7
 scipy==1.1.0

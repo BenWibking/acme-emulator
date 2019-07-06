@@ -10,6 +10,11 @@ conda activate acme
 pip install -r requirements.txt
 ```
 
+If pycurl does not install correctly using the above method, try this instead (I don't know why this happens):
+```
+conda install pycurl
+```
+
 ## Usage
 
 Each of the doit pipelines can be run with, e.g.
