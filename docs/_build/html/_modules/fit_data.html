@@ -1,0 +1,977 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>fit_data &mdash; ACME Emulator  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> ACME Emulator
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ACME Emulator</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">Module code</a> &raquo;</li>
+        
+      <li>fit_data</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for fit_data</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+
+<span class="kn">import</span> <span class="nn">inspect</span>
+<span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">import</span> <span class="nn">configparser</span>
+<span class="kn">import</span> <span class="nn">config</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">nlopt</span>
+<span class="kn">import</span> <span class="nn">h5py</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">numba</span> <span class="k">import</span> <span class="n">jit</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="k">import</span> <span class="n">Path</span>
+
+<span class="kn">from</span> <span class="nn">math</span> <span class="k">import</span> <span class="n">exp</span><span class="p">,</span> <span class="n">sqrt</span><span class="p">,</span> <span class="n">log</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">numpy.linalg</span>
+
+
+<div class="viewcode-block" id="polynomial_kernel"><a class="viewcode-back" href="../fit_data.html#fit_data.polynomial_kernel">[docs]</a><span class="nd">@jit</span>
+<span class="k">def</span> <span class="nf">polynomial_kernel</span><span class="p">(</span><span class="n">X_i</span><span class="p">,</span><span class="n">X_j</span><span class="p">,</span><span class="n">h</span><span class="p">,</span><span class="n">p</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+	<span class="n">dotproduct</span> <span class="o">=</span> <span class="p">(</span><span class="n">X_i</span> <span class="o">@</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">h</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span><span class="o">**-</span><span class="mi">2</span><span class="p">)</span> <span class="o">@</span> <span class="n">X_j</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+	<span class="k">return</span> <span class="n">h</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">h</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">dotproduct</span><span class="p">)</span><span class="o">**</span><span class="n">p</span></div>
+
+
+<div class="viewcode-block" id="poly2_kernel"><a class="viewcode-back" href="../fit_data.html#fit_data.poly2_kernel">[docs]</a><span class="nd">@jit</span>
+<span class="k">def</span> <span class="nf">poly2_kernel</span><span class="p">(</span><span class="n">X_i</span><span class="p">,</span><span class="n">X_j</span><span class="p">,</span><span class="n">h</span><span class="p">):</span>
+	<span class="k">return</span> <span class="n">polynomial_kernel</span><span class="p">(</span><span class="n">X_i</span><span class="p">,</span><span class="n">X_j</span><span class="p">,</span><span class="n">h</span><span class="p">,</span><span class="n">p</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="poly3_kernel"><a class="viewcode-back" href="../fit_data.html#fit_data.poly3_kernel">[docs]</a><span class="nd">@jit</span>
+<span class="k">def</span> <span class="nf">poly3_kernel</span><span class="p">(</span><span class="n">X_i</span><span class="p">,</span><span class="n">X_j</span><span class="p">,</span><span class="n">h</span><span class="p">):</span>
+	<span class="k">return</span> <span class="n">polynomial_kernel</span><span class="p">(</span><span class="n">X_i</span><span class="p">,</span><span class="n">X_j</span><span class="p">,</span><span class="n">h</span><span class="p">,</span><span class="n">p</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="poly4_kernel"><a class="viewcode-back" href="../fit_data.html#fit_data.poly4_kernel">[docs]</a><span class="nd">@jit</span>
+<span class="k">def</span> <span class="nf">poly4_kernel</span><span class="p">(</span><span class="n">X_i</span><span class="p">,</span><span class="n">X_j</span><span class="p">,</span><span class="n">h</span><span class="p">):</span>
+	<span class="k">return</span> <span class="n">polynomial_kernel</span><span class="p">(</span><span class="n">X_i</span><span class="p">,</span><span class="n">X_j</span><span class="p">,</span><span class="n">h</span><span class="p">,</span><span class="n">p</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="poly5_kernel"><a class="viewcode-back" href="../fit_data.html#fit_data.poly5_kernel">[docs]</a><span class="nd">@jit</span>
+<span class="k">def</span> <span class="nf">poly5_kernel</span><span class="p">(</span><span class="n">X_i</span><span class="p">,</span><span class="n">X_j</span><span class="p">,</span><span class="n">h</span><span class="p">):</span>
+	<span class="k">return</span> <span class="n">polynomial_kernel</span><span class="p">(</span><span class="n">X_i</span><span class="p">,</span><span class="n">X_j</span><span class="p">,</span><span class="n">h</span><span class="p">,</span><span class="n">p</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="poly6_kernel"><a class="viewcode-back" href="../fit_data.html#fit_data.poly6_kernel">[docs]</a><span class="nd">@jit</span>
+<span class="k">def</span> <span class="nf">poly6_kernel</span><span class="p">(</span><span class="n">X_i</span><span class="p">,</span><span class="n">X_j</span><span class="p">,</span><span class="n">h</span><span class="p">):</span>
+	<span class="k">return</span> <span class="n">polynomial_kernel</span><span class="p">(</span><span class="n">X_i</span><span class="p">,</span><span class="n">X_j</span><span class="p">,</span><span class="n">h</span><span class="p">,</span><span class="n">p</span><span class="o">=</span><span class="mi">6</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="matern32_kernel"><a class="viewcode-back" href="../fit_data.html#fit_data.matern32_kernel">[docs]</a><span class="nd">@jit</span>
+<span class="k">def</span> <span class="nf">matern32_kernel</span><span class="p">(</span><span class="n">X_i</span><span class="p">,</span><span class="n">X_j</span><span class="p">,</span><span class="n">h</span><span class="p">):</span>
+
+	<span class="sd">&quot;&quot;&quot;compute Matern-3/2 kernel.&quot;&quot;&quot;</span>
+	
+	<span class="n">w</span> <span class="o">=</span> <span class="p">(</span><span class="n">X_i</span> <span class="o">-</span> <span class="n">X_j</span><span class="p">)</span>
+	<span class="n">r</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">w</span> <span class="o">@</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">h</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="o">**-</span><span class="mi">2</span><span class="p">)</span> <span class="o">@</span> <span class="n">w</span><span class="p">))</span>
+	
+	<span class="k">return</span> <span class="n">h</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">sqrt</span><span class="p">(</span><span class="mf">3.0</span><span class="p">)</span><span class="o">*</span><span class="n">r</span><span class="p">)</span><span class="o">*</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">3.0</span><span class="p">)</span><span class="o">*</span><span class="n">r</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="matern52_kernel"><a class="viewcode-back" href="../fit_data.html#fit_data.matern52_kernel">[docs]</a><span class="nd">@jit</span>
+<span class="k">def</span> <span class="nf">matern52_kernel</span><span class="p">(</span><span class="n">X_i</span><span class="p">,</span><span class="n">X_j</span><span class="p">,</span><span class="n">h</span><span class="p">):</span>
+
+	<span class="sd">&quot;&quot;&quot;compute Matern-5/2 kernel.&quot;&quot;&quot;</span>
+	
+	<span class="n">w</span> <span class="o">=</span> <span class="p">(</span><span class="n">X_i</span> <span class="o">-</span> <span class="n">X_j</span><span class="p">)</span>
+	<span class="n">r</span> <span class="o">=</span> <span class="p">(</span><span class="n">w</span> <span class="o">@</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">h</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="o">**-</span><span class="mi">2</span><span class="p">)</span> <span class="o">@</span> <span class="n">w</span><span class="p">))</span>
+	<span class="n">r</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">rsq</span><span class="p">)</span>
+	
+	<span class="k">return</span> <span class="n">h</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">sqrt</span><span class="p">(</span><span class="mf">5.0</span><span class="p">)</span><span class="o">*</span><span class="n">r</span> <span class="o">+</span> <span class="p">(</span><span class="mf">5.</span><span class="o">/</span><span class="mf">3.</span><span class="p">)</span><span class="o">*</span><span class="n">rsq</span><span class="p">)</span><span class="o">*</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">5.0</span><span class="p">)</span><span class="o">*</span><span class="n">r</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="poly2_matern32_kernel"><a class="viewcode-back" href="../fit_data.html#fit_data.poly2_matern32_kernel">[docs]</a><span class="nd">@jit</span>
+<span class="k">def</span> <span class="nf">poly2_matern32_kernel</span><span class="p">(</span><span class="n">X_i</span><span class="p">,</span><span class="n">X_j</span><span class="p">,</span><span class="n">h</span><span class="p">):</span>
+
+	<span class="n">scales</span> <span class="o">=</span> <span class="n">h</span><span class="p">[</span><span class="mi">3</span><span class="p">:]</span>
+	<span class="n">mid</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">scales</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span>
+	<span class="n">s1</span> <span class="o">=</span> <span class="n">scales</span><span class="p">[:</span><span class="n">mid</span><span class="p">]</span>
+	<span class="n">s2</span> <span class="o">=</span> <span class="n">scales</span><span class="p">[</span><span class="n">mid</span><span class="p">:]</span>
+	
+	<span class="n">w</span> <span class="o">=</span> <span class="p">(</span><span class="n">X_i</span> <span class="o">-</span> <span class="n">X_j</span><span class="p">)</span>	
+	<span class="n">H1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">s1</span><span class="o">**-</span><span class="mi">2</span><span class="p">)</span>
+	<span class="n">H2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">s2</span><span class="o">**-</span><span class="mi">2</span><span class="p">)</span>
+	<span class="n">r</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">w</span> <span class="o">@</span> <span class="p">(</span><span class="n">H1</span> <span class="o">@</span> <span class="n">w</span><span class="p">))</span>
+	<span class="n">dotproduct</span> <span class="o">=</span> <span class="p">(</span><span class="n">X_i</span> <span class="o">@</span> <span class="p">(</span> <span class="n">H2</span> <span class="o">@</span> <span class="n">X_j</span><span class="o">.</span><span class="n">T</span> <span class="p">))</span>
+	
+	<span class="k">return</span> <span class="n">h</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">sqrt</span><span class="p">(</span><span class="mf">3.0</span><span class="p">)</span><span class="o">*</span><span class="n">r</span><span class="p">)</span><span class="o">*</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">3.0</span><span class="p">)</span><span class="o">*</span><span class="n">r</span><span class="p">)</span> <span class="o">+</span> <span class="n">h</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">dotproduct</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">h</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="sqrexp_matern32_kernel"><a class="viewcode-back" href="../fit_data.html#fit_data.sqrexp_matern32_kernel">[docs]</a><span class="nd">@jit</span>
+<span class="k">def</span> <span class="nf">sqrexp_matern32_kernel</span><span class="p">(</span><span class="n">X_i</span><span class="p">,</span><span class="n">X_j</span><span class="p">,</span><span class="n">h</span><span class="p">):</span>
+
+	<span class="sd">&quot;&quot;&quot;compute Squared Exponential + Matern-3/2 kernel.&quot;&quot;&quot;</span>
+	<span class="n">scales</span> <span class="o">=</span> <span class="n">h</span><span class="p">[</span><span class="mi">3</span><span class="p">:]</span>
+	<span class="n">mid</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">scales</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span>
+	<span class="n">s1</span> <span class="o">=</span> <span class="n">scales</span><span class="p">[:</span><span class="n">mid</span><span class="p">]</span>
+	<span class="n">s2</span> <span class="o">=</span> <span class="n">scales</span><span class="p">[</span><span class="n">mid</span><span class="p">:]</span>
+	
+	<span class="n">w</span> <span class="o">=</span> <span class="p">(</span><span class="n">X_i</span> <span class="o">-</span> <span class="n">X_j</span><span class="p">)</span>
+	<span class="n">r1</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">w</span> <span class="o">@</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">s1</span><span class="o">**-</span><span class="mi">2</span><span class="p">)</span> <span class="o">@</span> <span class="n">w</span><span class="p">))</span>
+	<span class="n">r2</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">w</span> <span class="o">@</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">s2</span><span class="o">**-</span><span class="mi">2</span><span class="p">)</span> <span class="o">@</span> <span class="n">w</span><span class="p">))</span>
+	
+	<span class="k">return</span> <span class="n">h</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">sqrt</span><span class="p">(</span><span class="mf">3.0</span><span class="p">)</span><span class="o">*</span><span class="n">r1</span><span class="p">)</span><span class="o">*</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">3.0</span><span class="p">)</span><span class="o">*</span><span class="n">r1</span><span class="p">)</span> <span class="o">+</span> <span class="n">h</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="n">r2</span><span class="o">*</span><span class="n">r2</span><span class="p">)</span> <span class="o">+</span> <span class="n">h</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="sqrexp_matern52_kernel"><a class="viewcode-back" href="../fit_data.html#fit_data.sqrexp_matern52_kernel">[docs]</a><span class="nd">@jit</span>
+<span class="k">def</span> <span class="nf">sqrexp_matern52_kernel</span><span class="p">(</span><span class="n">X_i</span><span class="p">,</span><span class="n">X_j</span><span class="p">,</span><span class="n">h</span><span class="p">):</span>
+
+	<span class="sd">&quot;&quot;&quot;compute Squared Exponential + Matern-5/2 kernel.&quot;&quot;&quot;</span>
+	<span class="n">scales</span> <span class="o">=</span> <span class="n">h</span><span class="p">[</span><span class="mi">3</span><span class="p">:]</span>
+	<span class="n">mid</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">scales</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span>
+	<span class="n">s1</span> <span class="o">=</span> <span class="n">scales</span><span class="p">[:</span><span class="n">mid</span><span class="p">]</span>
+	<span class="n">s2</span> <span class="o">=</span> <span class="n">scales</span><span class="p">[</span><span class="n">mid</span><span class="p">:]</span>
+	
+	<span class="n">w</span> <span class="o">=</span> <span class="p">(</span><span class="n">X_i</span> <span class="o">-</span> <span class="n">X_j</span><span class="p">)</span>
+	<span class="n">r1</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">w</span> <span class="o">@</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">s1</span><span class="o">**-</span><span class="mi">2</span><span class="p">)</span> <span class="o">@</span> <span class="n">w</span><span class="p">))</span>
+	<span class="n">r2</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">w</span> <span class="o">@</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">s2</span><span class="o">**-</span><span class="mi">2</span><span class="p">)</span> <span class="o">@</span> <span class="n">w</span><span class="p">))</span>
+	
+	<span class="k">return</span> <span class="n">h</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">sqrt</span><span class="p">(</span><span class="mf">5.0</span><span class="p">)</span><span class="o">*</span><span class="n">r1</span> <span class="o">+</span> <span class="p">(</span><span class="mf">5.</span><span class="o">/</span><span class="mf">3.</span><span class="p">)</span><span class="o">*</span><span class="n">r1</span><span class="o">*</span><span class="n">r1</span><span class="p">)</span><span class="o">*</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">5.0</span><span class="p">)</span><span class="o">*</span><span class="n">r1</span><span class="p">)</span> <span class="o">+</span> \
+			<span class="n">h</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="n">r2</span><span class="o">*</span><span class="n">r2</span><span class="p">)</span> <span class="o">+</span> <span class="n">h</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="sqrexp_kernel"><a class="viewcode-back" href="../fit_data.html#fit_data.sqrexp_kernel">[docs]</a><span class="nd">@jit</span>
+<span class="k">def</span> <span class="nf">sqrexp_kernel</span><span class="p">(</span><span class="n">X_i</span><span class="p">,</span><span class="n">X_j</span><span class="p">,</span><span class="n">h</span><span class="p">):</span>
+
+	<span class="sd">&quot;&quot;&quot;compute Squared Exponential kernel.&quot;&quot;&quot;</span>
+	<span class="n">s</span> <span class="o">=</span> <span class="n">h</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span>	
+	<span class="n">w</span> <span class="o">=</span> <span class="p">(</span><span class="n">X_i</span> <span class="o">-</span> <span class="n">X_j</span><span class="p">)</span>
+	<span class="n">rsq</span> <span class="o">=</span> <span class="n">w</span> <span class="o">@</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">s</span><span class="o">**-</span><span class="mi">2</span><span class="p">)</span> <span class="o">@</span> <span class="n">w</span><span class="p">)</span>
+	
+	<span class="k">return</span> <span class="n">h</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="n">rsq</span><span class="p">)</span> <span class="o">+</span> <span class="n">h</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="spline_kernel"><a class="viewcode-back" href="../fit_data.html#fit_data.spline_kernel">[docs]</a><span class="nd">@jit</span>
+<span class="k">def</span> <span class="nf">spline_kernel</span><span class="p">(</span><span class="n">X_i</span><span class="p">,</span><span class="n">X_j</span><span class="p">,</span><span class="n">h</span><span class="p">):</span>
+
+	<span class="sd">&quot;&quot;&quot;compute cubic spline kernel from tensor product of scalar cubic splines.</span>
+<span class="sd">	Parameters should be normalized to [0,1).&quot;&quot;&quot;</span>
+	
+	<span class="n">product</span> <span class="o">=</span> <span class="mf">1.0</span>
+	<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">X_i</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+		<span class="n">x</span> <span class="o">=</span> <span class="n">X_i</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+		<span class="n">y</span> <span class="o">=</span> <span class="n">X_j</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+		<span class="n">z</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">)</span>
+		<span class="n">product</span> <span class="o">*=</span> <span class="mf">1.0</span> <span class="o">+</span> <span class="n">x</span><span class="o">*</span><span class="n">y</span> <span class="o">+</span> <span class="mf">0.5</span><span class="o">*</span><span class="nb">abs</span><span class="p">(</span><span class="n">x</span><span class="o">-</span><span class="n">y</span><span class="p">)</span><span class="o">*</span><span class="n">z</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="mf">3.</span><span class="p">)</span><span class="o">*</span><span class="n">z</span><span class="o">**</span><span class="mi">3</span>
+
+	<span class="k">return</span> <span class="n">product</span></div>
+
+
+<div class="viewcode-block" id="polyharmonic_kernel"><a class="viewcode-back" href="../fit_data.html#fit_data.polyharmonic_kernel">[docs]</a><span class="nd">@jit</span>
+<span class="k">def</span> <span class="nf">polyharmonic_kernel</span><span class="p">(</span><span class="n">X_i</span><span class="p">,</span><span class="n">X_j</span><span class="p">,</span><span class="n">h</span><span class="p">):</span>
+
+	<span class="sd">&quot;&quot;&quot;compute polyharmonic (thin-plate spline) kernel.&quot;&quot;&quot;</span>
+	
+	<span class="n">w</span> <span class="o">=</span> <span class="p">(</span><span class="n">X_i</span> <span class="o">-</span> <span class="n">X_j</span><span class="p">)</span>
+	<span class="n">r</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">w</span> <span class="o">@</span> <span class="n">w</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+	<span class="n">D</span> <span class="o">=</span> <span class="n">X_i</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+	<span class="n">k</span> <span class="o">=</span> <span class="mf">0.</span>
+	<span class="k">if</span> <span class="n">D</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="c1"># D is even</span>
+		<span class="n">k</span> <span class="o">=</span> <span class="n">r</span> <span class="o">*</span> <span class="n">log</span><span class="p">(</span><span class="n">r</span><span class="o">**</span><span class="n">r</span><span class="p">)</span>
+	<span class="k">else</span><span class="p">:</span> <span class="c1"># D is odd</span>
+		<span class="n">k</span> <span class="o">=</span> <span class="n">r</span><span class="o">**</span><span class="mi">3</span>
+		
+	<span class="k">return</span> <span class="n">k</span> <span class="o">+</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">X_i</span> <span class="o">@</span> <span class="n">X_j</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span></div>
+
+
+<div class="viewcode-block" id="compute_kernel"><a class="viewcode-back" href="../fit_data.html#fit_data.compute_kernel">[docs]</a><span class="nd">@jit</span>
+<span class="k">def</span> <span class="nf">compute_kernel</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">h</span><span class="p">,</span><span class="n">generic_kernel</span><span class="p">):</span>
+
+	<span class="n">K</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span> <span class="c1"># kernel matrix</span>
+	<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">K</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+		<span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">K</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+			<span class="n">K</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">generic_kernel</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">i</span><span class="p">,:],</span><span class="n">X</span><span class="p">[</span><span class="n">j</span><span class="p">,:],</span><span class="n">h</span><span class="p">)</span>
+			
+	<span class="k">return</span> <span class="n">K</span></div>
+
+
+<div class="viewcode-block" id="LOOE_vector"><a class="viewcode-back" href="../fit_data.html#fit_data.LOOE_vector">[docs]</a><span class="nd">@jit</span>
+<span class="k">def</span> <span class="nf">LOOE_vector</span><span class="p">(</span><span class="n">c</span><span class="p">,</span><span class="n">Ginv</span><span class="p">):</span>
+
+	<span class="sd">&quot;&quot;&quot;return the leave-one-out error vector.&quot;&quot;&quot;</span>
+	
+	<span class="n">this_LOOE_vector</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+	<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+		<span class="n">this_LOOE_vector</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+=</span> <span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">Ginv</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">i</span><span class="p">])</span>
+	<span class="k">return</span> <span class="n">this_LOOE_vector</span></div>
+
+
+<div class="viewcode-block" id="fit_data_with_kernel"><a class="viewcode-back" href="../fit_data.html#fit_data.fit_data_with_kernel">[docs]</a><span class="nd">@jit</span>
+<span class="k">def</span> <span class="nf">fit_data_with_kernel</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">Yerr</span><span class="p">,</span> <span class="n">Lambda</span><span class="p">):</span>
+
+	<span class="sd">&quot;&quot;&quot;fit data with a least-squares model with kernel K, observations Y.</span>
+<span class="sd">	If noise of observations is Gaussian, \Lambda = 2*var(x).&quot;&quot;&quot;</span>
+	
+	<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">K</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+		<span class="n">K</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">i</span><span class="p">]</span> <span class="o">+=</span> <span class="n">Lambda</span> <span class="o">*</span> <span class="p">(</span> <span class="n">Yerr</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="p">)</span>
+	
+	<span class="n">eigval</span><span class="p">,</span> <span class="n">Q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">eigh</span><span class="p">(</span><span class="n">K</span><span class="p">)</span>	<span class="c1"># this is faster than computing np.inv(K)</span>
+
+	<span class="n">D</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">Q</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+	<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">D</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+		<span class="n">D</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">/</span><span class="n">eigval</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+	<span class="n">Ginv</span> <span class="o">=</span> <span class="n">Q</span> <span class="o">@</span> <span class="n">D</span> <span class="o">@</span> <span class="n">Q</span><span class="o">.</span><span class="n">T</span>
+	<span class="n">c</span> <span class="o">=</span> <span class="n">Ginv</span> <span class="o">@</span> <span class="n">Y</span>
+	
+	<span class="n">err_vector</span> <span class="o">=</span> <span class="n">LOOE_vector</span><span class="p">(</span><span class="n">c</span><span class="p">,</span><span class="n">Ginv</span><span class="p">)</span>
+	<span class="n">N</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+	<span class="n">err_norm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">err_vector</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+	<span class="n">rms_err_norm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">err_norm</span><span class="o">/</span><span class="n">N</span><span class="p">)</span>
+	
+	<span class="c1">## Rasmussen &amp; Williams, ch. 5, eq. 5.10</span>
+	<span class="n">logp</span> <span class="o">=</span> <span class="mf">0.</span>
+	<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">Yerr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+		<span class="n">sqerr</span> <span class="o">=</span> <span class="n">Lambda</span> <span class="o">*</span> <span class="p">(</span> <span class="n">Yerr</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="p">)</span>
+		<span class="n">logp_i</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">sqerr</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">err_vector</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mf">2.0</span><span class="o">*</span><span class="n">sqerr</span><span class="p">)</span> <span class="o">-</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+		<span class="n">logp</span> <span class="o">+=</span> <span class="n">logp_i</span>
+
+	<span class="k">return</span> <span class="n">c</span><span class="p">,</span> <span class="n">rms_err_norm</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">asscalar</span><span class="p">(</span><span class="n">logp</span><span class="p">),</span> <span class="n">err_vector</span></div>
+	
+
+<div class="viewcode-block" id="fit_hyperparameters"><a class="viewcode-back" href="../fit_data.html#fit_data.fit_hyperparameters">[docs]</a><span class="k">def</span> <span class="nf">fit_hyperparameters</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">Yerr</span><span class="p">,</span> <span class="n">kernel</span><span class="o">=</span><span class="s1">&#39;poly&#39;</span><span class="p">):</span>
+
+	<span class="sd">&quot;&quot;&quot;fit the hyperparameters of the kernel function.&quot;&quot;&quot;</span>
+
+	<span class="n">N</span><span class="o">=</span><span class="n">Y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+	<span class="n">nparams</span><span class="o">=</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+	<span class="n">lambda_guess</span> <span class="o">=</span> <span class="mf">0.01</span>
+	<span class="n">lambda_max</span> <span class="o">=</span> <span class="mf">1.0</span>
+	<span class="n">lambda_min</span> <span class="o">=</span> <span class="mf">1.0e-4</span>
+
+
+	<span class="k">if</span> <span class="n">kernel</span><span class="o">==</span><span class="s1">&#39;poly2&#39;</span> <span class="ow">or</span> <span class="n">kernel</span><span class="o">==</span><span class="s1">&#39;poly3&#39;</span> <span class="ow">or</span> <span class="n">kernel</span><span class="o">==</span><span class="s1">&#39;poly4&#39;</span> \
+		<span class="ow">or</span> <span class="n">kernel</span><span class="o">==</span><span class="s1">&#39;poly5&#39;</span> <span class="ow">or</span> <span class="n">kernel</span><span class="o">==</span><span class="s1">&#39;poly6&#39;</span><span class="p">:</span>
+	
+		<span class="n">scale_guess</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">nparams</span><span class="p">)</span>
+		<span class="n">scale_max</span> <span class="o">=</span> <span class="mf">1e2</span> <span class="o">*</span> <span class="n">scale_guess</span>
+		<span class="n">scale_min</span> <span class="o">=</span> <span class="mf">1e-2</span> <span class="o">*</span> <span class="n">scale_guess</span>
+		<span class="n">kernel_guess</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">Y</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">Y</span><span class="p">)])</span>
+		<span class="n">kernel_max</span> <span class="o">=</span> <span class="mf">1e2</span> <span class="o">*</span> <span class="n">kernel_guess</span>
+		<span class="n">kernel_min</span> <span class="o">=</span> <span class="mf">1e-2</span> <span class="o">*</span> <span class="n">kernel_guess</span>
+		<span class="n">x0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([[</span><span class="n">lambda_guess</span><span class="p">],</span> <span class="n">kernel_guess</span><span class="p">,</span> <span class="n">scale_guess</span><span class="p">])</span>
+		<span class="n">hyper_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([[</span><span class="n">lambda_max</span><span class="p">],</span> <span class="n">kernel_max</span><span class="p">,</span> <span class="n">scale_max</span><span class="p">])</span>
+		<span class="n">hyper_min</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([[</span><span class="n">lambda_min</span><span class="p">],</span> <span class="n">kernel_min</span><span class="p">,</span> <span class="n">scale_min</span><span class="p">])</span>
+		<span class="k">if</span> <span class="n">kernel</span><span class="o">==</span><span class="s1">&#39;poly2&#39;</span><span class="p">:</span>
+			<span class="n">generic_kernel</span> <span class="o">=</span> <span class="n">poly2_kernel</span>
+		<span class="k">elif</span> <span class="n">kernel</span><span class="o">==</span><span class="s1">&#39;poly3&#39;</span><span class="p">:</span>
+			<span class="n">generic_kernel</span> <span class="o">=</span> <span class="n">poly3_kernel</span>
+		<span class="k">elif</span> <span class="n">kernel</span><span class="o">==</span><span class="s1">&#39;poly4&#39;</span><span class="p">:</span>
+			<span class="n">generic_kernel</span> <span class="o">=</span> <span class="n">poly4_kernel</span>
+		<span class="k">elif</span> <span class="n">kernel</span><span class="o">==</span><span class="s1">&#39;poly5&#39;</span><span class="p">:</span>
+			<span class="n">generic_kernel</span> <span class="o">=</span> <span class="n">poly5_kernel</span>
+		<span class="k">elif</span> <span class="n">kernel</span><span class="o">==</span><span class="s1">&#39;poly6&#39;</span><span class="p">:</span>
+			<span class="n">generic_kernel</span> <span class="o">=</span> <span class="n">poly6_kernel</span>
+			
+	<span class="k">elif</span> <span class="n">kernel</span><span class="o">==</span><span class="s1">&#39;spline&#39;</span><span class="p">:</span>
+	
+		<span class="n">x0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([[</span><span class="n">lambda_guess</span><span class="p">]])</span>
+		<span class="n">hyper_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([[</span><span class="n">lambda_max</span><span class="p">]])</span>
+		<span class="n">hyper_min</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([[</span><span class="n">lambda_min</span><span class="p">]])</span>
+		<span class="n">generic_kernel</span> <span class="o">=</span> <span class="n">spline_kernel</span>
+		
+	<span class="k">elif</span> <span class="n">kernel</span><span class="o">==</span><span class="s1">&#39;polyharmonic&#39;</span><span class="p">:</span>
+	
+		<span class="n">x0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([[</span><span class="n">lambda_guess</span><span class="p">]])</span>
+		<span class="n">hyper_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([[</span><span class="n">lambda_max</span><span class="p">]])</span>
+		<span class="n">hyper_min</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([[</span><span class="n">lambda_min</span><span class="p">]])</span>
+		<span class="n">generic_kernel</span> <span class="o">=</span> <span class="n">polyharmonic_kernel</span>
+		
+	<span class="k">elif</span> <span class="n">kernel</span><span class="o">==</span><span class="s1">&#39;matern32&#39;</span><span class="p">:</span>
+	
+		<span class="n">scale_guess</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span><span class="n">i</span><span class="p">])</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span><span class="n">i</span><span class="p">]))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nparams</span><span class="p">)])</span>
+		<span class="n">scale_max</span> <span class="o">=</span> <span class="mf">1e5</span>  <span class="o">*</span> <span class="n">scale_guess</span>
+		<span class="n">scale_min</span> <span class="o">=</span> <span class="mf">1e-5</span> <span class="o">*</span> <span class="n">scale_guess</span>
+		<span class="n">kernel_guess</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span> <span class="o">-</span> <span class="n">lambda_guess</span><span class="p">])</span>
+		<span class="n">kernel_max</span> <span class="o">=</span> <span class="mf">1.0</span>
+		<span class="n">kernel_min</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">kernel_guess</span><span class="p">)</span>
+		<span class="n">x0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([[</span><span class="n">lambda_guess</span><span class="p">],</span> <span class="n">kernel_guess</span><span class="p">,</span> <span class="n">scale_guess</span><span class="p">])</span>
+		<span class="n">hyper_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([[</span><span class="n">lambda_max</span><span class="p">],</span> <span class="n">kernel_max</span><span class="p">,</span> <span class="n">scale_max</span><span class="p">])</span>
+		<span class="n">hyper_min</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([[</span><span class="n">lambda_min</span><span class="p">],</span> <span class="n">kernel_min</span><span class="p">,</span> <span class="n">scale_min</span><span class="p">])</span>
+		<span class="n">generic_kernel</span> <span class="o">=</span> <span class="n">matern32_kernel</span>
+		
+	<span class="k">elif</span> <span class="n">kernel</span><span class="o">==</span><span class="s1">&#39;matern52&#39;</span><span class="p">:</span>
+	
+		<span class="n">scale_guess</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span><span class="n">i</span><span class="p">])</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span><span class="n">i</span><span class="p">]))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nparams</span><span class="p">)])</span>
+		<span class="n">scale_max</span> <span class="o">=</span> <span class="mf">1e5</span>  <span class="o">*</span> <span class="n">scale_guess</span>
+		<span class="n">scale_min</span> <span class="o">=</span> <span class="mf">1e-5</span> <span class="o">*</span> <span class="n">scale_guess</span>
+		<span class="n">kernel_guess</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">Y</span><span class="p">)])</span>
+		<span class="n">kernel_max</span> <span class="o">=</span> <span class="mf">1e5</span> <span class="o">*</span> <span class="n">kernel_guess</span>
+		<span class="n">kernel_min</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">kernel_guess</span><span class="p">)</span>
+		<span class="n">x0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([[</span><span class="n">lambda_guess</span><span class="p">],</span> <span class="n">kernel_guess</span><span class="p">,</span> <span class="n">scale_guess</span><span class="p">])</span>
+		<span class="n">hyper_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([[</span><span class="n">lambda_max</span><span class="p">],</span> <span class="n">kernel_max</span><span class="p">,</span> <span class="n">scale_max</span><span class="p">])</span>
+		<span class="n">hyper_min</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([[</span><span class="n">lambda_min</span><span class="p">],</span> <span class="n">kernel_min</span><span class="p">,</span> <span class="n">scale_min</span><span class="p">])</span>
+		<span class="n">generic_kernel</span> <span class="o">=</span> <span class="n">matern52_kernel</span>
+		
+	<span class="k">elif</span> <span class="n">kernel</span><span class="o">==</span><span class="s1">&#39;poly2_matern32&#39;</span><span class="p">:</span>
+	
+		<span class="n">scale_guess</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span><span class="n">i</span><span class="p">])</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span><span class="n">i</span><span class="p">]))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nparams</span><span class="p">)])</span>
+		<span class="n">scale_max</span> <span class="o">=</span> <span class="mf">1e2</span>  <span class="o">*</span> <span class="n">scale_guess</span>
+		<span class="n">scale_min</span> <span class="o">=</span> <span class="mf">1e-2</span> <span class="o">*</span> <span class="n">scale_guess</span>
+		<span class="n">scale2_guess</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span><span class="n">i</span><span class="p">])</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span><span class="n">i</span><span class="p">]))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nparams</span><span class="p">)])</span>
+		<span class="n">scale2_max</span> <span class="o">=</span> <span class="mf">1e2</span>  <span class="o">*</span> <span class="n">scale2_guess</span>
+		<span class="n">scale2_min</span> <span class="o">=</span> <span class="mf">1e-2</span> <span class="o">*</span> <span class="n">scale2_guess</span>
+		<span class="n">kernel_guess</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([(</span><span class="mf">1.</span><span class="o">/</span><span class="mf">3.</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span> <span class="o">-</span> <span class="n">lambda_guess</span><span class="p">),</span>
+								 <span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="mf">3.</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span> <span class="o">-</span> <span class="n">lambda_guess</span><span class="p">),</span>
+								 <span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="mf">3.</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span> <span class="o">-</span> <span class="n">lambda_guess</span><span class="p">)])</span>
+		<span class="n">kernel_max</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">kernel_guess</span><span class="p">)</span>
+		<span class="n">kernel_min</span> <span class="o">=</span> <span class="mf">1e-3</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">kernel_guess</span><span class="p">)</span>
+		<span class="n">x0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([[</span><span class="n">lambda_guess</span><span class="p">],</span> <span class="n">kernel_guess</span><span class="p">,</span> <span class="n">scale_guess</span><span class="p">,</span> <span class="n">scale2_guess</span><span class="p">])</span>
+		<span class="n">hyper_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([[</span><span class="n">lambda_max</span><span class="p">],</span> <span class="n">kernel_max</span><span class="p">,</span> <span class="n">scale_max</span><span class="p">,</span> <span class="n">scale2_max</span><span class="p">])</span>
+		<span class="n">hyper_min</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([[</span><span class="n">lambda_min</span><span class="p">],</span> <span class="n">kernel_min</span><span class="p">,</span> <span class="n">scale_min</span><span class="p">,</span> <span class="n">scale2_min</span><span class="p">])</span>
+		<span class="n">generic_kernel</span> <span class="o">=</span> <span class="n">poly2_matern32_kernel</span>
+		
+	<span class="k">elif</span> <span class="n">kernel</span><span class="o">==</span><span class="s1">&#39;sqrexp_matern32&#39;</span><span class="p">:</span>
+		
+		<span class="n">scale_guess</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span><span class="n">i</span><span class="p">])</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span><span class="n">i</span><span class="p">]))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nparams</span><span class="p">)])</span>
+		<span class="n">scale_max</span> <span class="o">=</span> <span class="mf">1e2</span>  <span class="o">*</span> <span class="n">scale_guess</span>
+		<span class="n">scale_min</span> <span class="o">=</span> <span class="mf">1e-2</span> <span class="o">*</span> <span class="n">scale_guess</span>
+		<span class="n">scale2_guess</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span><span class="n">i</span><span class="p">])</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span><span class="n">i</span><span class="p">]))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nparams</span><span class="p">)])</span>
+		<span class="n">scale2_max</span> <span class="o">=</span> <span class="mf">1e2</span>  <span class="o">*</span> <span class="n">scale2_guess</span>
+		<span class="n">scale2_min</span> <span class="o">=</span> <span class="mf">1e-2</span> <span class="o">*</span> <span class="n">scale2_guess</span>
+		<span class="n">kernel_guess</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([(</span><span class="mf">1.</span><span class="o">/</span><span class="mf">3.</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span> <span class="o">-</span> <span class="n">lambda_guess</span><span class="p">),</span>
+								 <span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="mf">3.</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span> <span class="o">-</span> <span class="n">lambda_guess</span><span class="p">),</span>
+								 <span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="mf">3.</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span> <span class="o">-</span> <span class="n">lambda_guess</span><span class="p">)])</span>
+		<span class="n">kernel_max</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">kernel_guess</span><span class="p">)</span>
+		<span class="n">kernel_min</span> <span class="o">=</span> <span class="mf">1e-3</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">kernel_guess</span><span class="p">)</span>
+		<span class="n">x0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([[</span><span class="n">lambda_guess</span><span class="p">],</span> <span class="n">kernel_guess</span><span class="p">,</span> <span class="n">scale_guess</span><span class="p">,</span> <span class="n">scale2_guess</span><span class="p">])</span>
+		<span class="n">hyper_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([[</span><span class="n">lambda_max</span><span class="p">],</span> <span class="n">kernel_max</span><span class="p">,</span> <span class="n">scale_max</span><span class="p">,</span> <span class="n">scale2_max</span><span class="p">])</span>
+		<span class="n">hyper_min</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([[</span><span class="n">lambda_min</span><span class="p">],</span> <span class="n">kernel_min</span><span class="p">,</span> <span class="n">scale_min</span><span class="p">,</span> <span class="n">scale2_min</span><span class="p">])</span>
+		<span class="n">generic_kernel</span> <span class="o">=</span> <span class="n">sqrexp_matern32_kernel</span>
+
+	<span class="k">elif</span> <span class="n">kernel</span><span class="o">==</span><span class="s1">&#39;sqrexp_matern52&#39;</span><span class="p">:</span>
+		
+		<span class="n">scale_guess</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span><span class="n">i</span><span class="p">])</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span><span class="n">i</span><span class="p">]))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nparams</span><span class="p">)])</span>
+		<span class="n">scale_max</span> <span class="o">=</span> <span class="mf">1e2</span>  <span class="o">*</span> <span class="n">scale_guess</span>
+		<span class="n">scale_min</span> <span class="o">=</span> <span class="mf">1e-2</span> <span class="o">*</span> <span class="n">scale_guess</span>
+		<span class="n">scale2_guess</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span><span class="n">i</span><span class="p">])</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span><span class="n">i</span><span class="p">]))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nparams</span><span class="p">)])</span>
+		<span class="n">scale2_max</span> <span class="o">=</span> <span class="mf">1e2</span>  <span class="o">*</span> <span class="n">scale2_guess</span>
+		<span class="n">scale2_min</span> <span class="o">=</span> <span class="mf">1e-2</span> <span class="o">*</span> <span class="n">scale2_guess</span>
+		<span class="n">kernel_guess</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([(</span><span class="mf">1.</span><span class="o">/</span><span class="mf">3.</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span> <span class="o">-</span> <span class="n">lambda_guess</span><span class="p">),</span>
+								 <span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="mf">3.</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span> <span class="o">-</span> <span class="n">lambda_guess</span><span class="p">),</span>
+								 <span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="mf">3.</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span> <span class="o">-</span> <span class="n">lambda_guess</span><span class="p">)])</span>
+		<span class="n">kernel_max</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">kernel_guess</span><span class="p">)</span>
+		<span class="n">kernel_min</span> <span class="o">=</span> <span class="mf">1e-3</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">kernel_guess</span><span class="p">)</span>
+		<span class="n">x0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([[</span><span class="n">lambda_guess</span><span class="p">],</span> <span class="n">kernel_guess</span><span class="p">,</span> <span class="n">scale_guess</span><span class="p">,</span> <span class="n">scale2_guess</span><span class="p">])</span>
+		<span class="n">hyper_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([[</span><span class="n">lambda_max</span><span class="p">],</span> <span class="n">kernel_max</span><span class="p">,</span> <span class="n">scale_max</span><span class="p">,</span> <span class="n">scale2_max</span><span class="p">])</span>
+		<span class="n">hyper_min</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([[</span><span class="n">lambda_min</span><span class="p">],</span> <span class="n">kernel_min</span><span class="p">,</span> <span class="n">scale_min</span><span class="p">,</span> <span class="n">scale2_min</span><span class="p">])</span>
+		<span class="n">generic_kernel</span> <span class="o">=</span> <span class="n">sqrexp_matern52_kernel</span>
+
+	<span class="k">elif</span> <span class="n">kernel</span><span class="o">==</span><span class="s1">&#39;sqrexp&#39;</span><span class="p">:</span>
+		
+		<span class="n">scale_guess</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span><span class="n">i</span><span class="p">])</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span><span class="n">i</span><span class="p">]))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nparams</span><span class="p">)])</span>
+		<span class="n">scale_max</span> <span class="o">=</span> <span class="mf">1e2</span>  <span class="o">*</span> <span class="n">scale_guess</span>
+		<span class="n">scale_min</span> <span class="o">=</span> <span class="mf">1e-2</span> <span class="o">*</span> <span class="n">scale_guess</span>
+
+		<span class="n">kernel_guess</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([(</span><span class="mf">1.</span><span class="o">/</span><span class="mf">3.</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span> <span class="o">-</span> <span class="n">lambda_guess</span><span class="p">),</span>
+								 <span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="mf">3.</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span> <span class="o">-</span> <span class="n">lambda_guess</span><span class="p">)])</span>
+
+		<span class="n">kernel_max</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">kernel_guess</span><span class="p">)</span>
+		<span class="n">kernel_min</span> <span class="o">=</span> <span class="mf">1e-3</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">kernel_guess</span><span class="p">)</span>
+
+		<span class="n">x0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([[</span><span class="n">lambda_guess</span><span class="p">],</span> <span class="n">kernel_guess</span><span class="p">,</span> <span class="n">scale_guess</span><span class="p">])</span>
+		<span class="n">hyper_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([[</span><span class="n">lambda_max</span><span class="p">],</span> <span class="n">kernel_max</span><span class="p">,</span> <span class="n">scale_max</span><span class="p">])</span>
+		<span class="n">hyper_min</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([[</span><span class="n">lambda_min</span><span class="p">],</span> <span class="n">kernel_min</span><span class="p">,</span> <span class="n">scale_min</span><span class="p">])</span>
+		<span class="n">generic_kernel</span> <span class="o">=</span> <span class="n">sqrexp_kernel</span>
+
+	<span class="k">else</span><span class="p">:</span>
+	
+		<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Kernel is not valid or not specified!&quot;</span><span class="p">)</span>
+		<span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+
+	<span class="nd">@jit</span>
+	<span class="k">def</span> <span class="nf">negative_log_likelihood</span><span class="p">(</span><span class="n">h</span><span class="p">):</span>
+		<span class="n">K</span> <span class="o">=</span> <span class="n">compute_kernel</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">h</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span><span class="n">generic_kernel</span><span class="p">)</span>
+		<span class="n">c</span><span class="p">,</span> <span class="n">rms_LOOE_norm</span><span class="p">,</span><span class="n">logp</span><span class="p">,</span><span class="n">err_vector</span> <span class="o">=</span> <span class="n">fit_data_with_kernel</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">K</span><span class="p">,</span><span class="n">Yerr</span><span class="p">,</span><span class="n">h</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+		<span class="k">return</span> <span class="o">-</span><span class="n">logp</span>
+
+
+	<span class="nd">@jit</span>
+	<span class="k">def</span> <span class="nf">leave_one_out_norm</span><span class="p">(</span><span class="n">h</span><span class="p">):</span>
+		<span class="n">K</span> <span class="o">=</span> <span class="n">compute_kernel</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">h</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span><span class="n">generic_kernel</span><span class="p">)</span>
+		<span class="n">c</span><span class="p">,</span> <span class="n">rms_LOOE_norm</span><span class="p">,</span><span class="n">logp</span><span class="p">,</span><span class="n">err_vector</span> <span class="o">=</span> <span class="n">fit_data_with_kernel</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">K</span><span class="p">,</span><span class="n">Yerr</span><span class="p">,</span><span class="n">h</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+		<span class="k">return</span> <span class="n">rms_LOOE_norm</span>
+
+
+	<span class="c1">## optimize hyperparameters</span>
+
+	<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">optimizing hyperparameters...&#39;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+	<span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+	
+	<span class="n">outer_opt</span> <span class="o">=</span> <span class="n">negative_log_likelihood</span>    
+	<span class="k">if</span> <span class="n">kernel</span><span class="o">==</span><span class="s1">&#39;polyharmonic&#39;</span> <span class="ow">or</span> <span class="n">kernel</span><span class="o">==</span><span class="s1">&#39;spline&#39;</span><span class="p">:</span>
+		<span class="n">outer_opt</span> <span class="o">=</span> <span class="n">leave_one_out_norm</span>
+	
+	<span class="n">f</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">h</span><span class="p">,</span> <span class="n">grad</span><span class="p">:</span> <span class="n">outer_opt</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+
+	<span class="n">opt</span> <span class="o">=</span> <span class="n">nlopt</span><span class="o">.</span><span class="n">opt</span><span class="p">(</span><span class="n">nlopt</span><span class="o">.</span><span class="n">LN_BOBYQA</span><span class="p">,</span> <span class="n">x0</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="c1"># tends to work better for this problem</span>
+	<span class="n">opt</span><span class="o">.</span><span class="n">set_min_objective</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+	<span class="n">opt</span><span class="o">.</span><span class="n">set_xtol_rel</span><span class="p">(</span><span class="mf">1e-5</span><span class="p">)</span>
+	<span class="n">opt</span><span class="o">.</span><span class="n">set_ftol_rel</span><span class="p">(</span><span class="mf">1e-5</span><span class="p">)</span>
+	<span class="n">opt</span><span class="o">.</span><span class="n">set_lower_bounds</span><span class="p">(</span><span class="n">hyper_min</span><span class="p">)</span>
+	<span class="n">opt</span><span class="o">.</span><span class="n">set_upper_bounds</span><span class="p">(</span><span class="n">hyper_max</span><span class="p">)</span>
+	<span class="n">xopt</span> <span class="o">=</span> <span class="n">opt</span><span class="o">.</span><span class="n">optimize</span><span class="p">(</span><span class="n">x0</span><span class="p">)</span>
+	<span class="n">best_h</span> <span class="o">=</span> <span class="p">(</span><span class="n">xopt</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+	<span class="n">best_lambda</span> <span class="o">=</span> <span class="p">(</span><span class="n">xopt</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+	
+	<span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">done in {time.time() - start_time} seconds.&#39;</span><span class="p">)</span>
+
+	<span class="n">K</span> <span class="o">=</span> <span class="n">compute_kernel</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">best_h</span><span class="p">,</span><span class="n">generic_kernel</span><span class="p">)</span>
+	<span class="n">c</span><span class="p">,</span> <span class="n">rms_LOOE_norm</span><span class="p">,</span> <span class="n">logp</span><span class="p">,</span> <span class="n">err_vector</span> <span class="o">=</span> <span class="n">fit_data_with_kernel</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">K</span><span class="p">,</span><span class="n">Yerr</span><span class="p">,</span><span class="n">best_lambda</span><span class="p">)</span>
+
+	<span class="k">return</span> <span class="n">c</span><span class="p">,</span> <span class="n">rms_LOOE_norm</span><span class="p">,</span> <span class="n">best_lambda</span><span class="p">,</span> <span class="n">best_h</span><span class="p">,</span> <span class="n">logp</span><span class="p">,</span> <span class="n">err_vector</span><span class="p">,</span> <span class="n">generic_kernel</span></div>
+
+
+<div class="viewcode-block" id="model_data"><a class="viewcode-back" href="../fit_data.html#fit_data.model_data">[docs]</a><span class="nd">@jit</span>
+<span class="k">def</span> <span class="nf">model_data</span><span class="p">(</span><span class="n">X_input</span><span class="p">,</span> <span class="n">X_model</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">generic_kernel</span><span class="p">):</span>
+
+	<span class="n">Y_model</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">X_model</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+	<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">X_model</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+		<span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+			<span class="n">Y_model</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+=</span> <span class="n">generic_kernel</span><span class="p">(</span><span class="n">X_input</span><span class="p">[</span><span class="n">j</span><span class="p">,:],</span> <span class="n">X_model</span><span class="p">[</span><span class="n">i</span><span class="p">,:],</span> <span class="n">h</span><span class="p">)</span> <span class="o">*</span> <span class="n">c</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+			
+	<span class="k">return</span> <span class="n">Y_model</span></div>
+
+
+<div class="viewcode-block" id="compute_labels"><a class="viewcode-back" href="../fit_data.html#fit_data.compute_labels">[docs]</a><span class="k">def</span> <span class="nf">compute_labels</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+
+	<span class="sd">&quot;&quot;&quot;normalize inputs to a [0, 1] hyperrectangle.&quot;&quot;&quot;</span>
+	
+	<span class="n">labels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+	<span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+		<span class="n">xmin</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:,</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+		<span class="n">xmax</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:,</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+		<span class="n">varrange</span> <span class="o">=</span> <span class="n">xmax</span> <span class="o">-</span> <span class="n">xmin</span>
+		<span class="n">labels</span><span class="p">[:,</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span><span class="p">[:,</span><span class="n">j</span><span class="p">]</span> <span class="o">-</span> <span class="n">xmin</span><span class="p">)</span><span class="o">/</span><span class="n">varrange</span>
+		
+	<span class="k">return</span> <span class="n">labels</span></div>
+
+
+<div class="viewcode-block" id="load_correlation_file"><a class="viewcode-back" href="../fit_data.html#fit_data.load_correlation_file">[docs]</a><span class="k">def</span> <span class="nf">load_correlation_file</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+
+	<span class="n">table</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="n">unpack</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+	<span class="n">binmin</span><span class="p">,</span> <span class="n">binmax</span><span class="p">,</span> <span class="n">err_corr</span><span class="p">,</span> <span class="n">corr</span> <span class="o">=</span> <span class="p">[</span><span class="n">table</span><span class="p">[:,</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)]</span>
+	<span class="k">return</span> <span class="n">binmin</span><span class="p">,</span> <span class="n">binmax</span><span class="p">,</span> <span class="n">err_corr</span><span class="p">,</span> <span class="n">corr</span></div>
+
+
+<div class="viewcode-block" id="load_scalar_file"><a class="viewcode-back" href="../fit_data.html#fit_data.load_scalar_file">[docs]</a><span class="k">def</span> <span class="nf">load_scalar_file</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+	
+	<span class="n">scalar</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="n">unpack</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+	<span class="k">return</span> <span class="n">scalar</span></div>
+
+
+<div class="viewcode-block" id="read_data"><a class="viewcode-back" href="../fit_data.html#fit_data.read_data">[docs]</a><span class="k">def</span> <span class="nf">read_data</span><span class="p">(</span><span class="n">sims_dir</span><span class="p">,</span> <span class="n">redshift_dir</span><span class="p">,</span> <span class="n">param_files</span><span class="p">,</span> <span class="n">filename_ext</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">load_scalar</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+
+	<span class="sd">&quot;&quot;&quot;read parameters from *.template_param files, read in *.galaxy_bias files,</span>
+<span class="sd">	read simulation /header files for cosmological params.</span>
+<span class="sd">	return (matrix X of parameters, vector Y of observations) for each radial bin.&quot;&quot;&quot;</span>
+	
+	<span class="n">sims_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">sims_dir</span><span class="p">)</span>
+	
+	<span class="c1"># each param_file should be of the form &#39;*.template_param&#39;</span>
+	<span class="k">def</span> <span class="nf">obs_filename</span><span class="p">(</span><span class="n">param_filename</span><span class="p">):</span>
+		<span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">param_filename</span><span class="p">)</span> <span class="o">+</span> <span class="n">filename_ext</span>
+	
+	<span class="k">if</span> <span class="n">load_scalar</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+		<span class="n">obs_vector</span> <span class="o">=</span> <span class="n">load_scalar_file</span><span class="p">(</span><span class="n">obs_filename</span><span class="p">(</span><span class="n">param_files</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+	<span class="k">else</span><span class="p">:</span>
+		<span class="n">binmin</span><span class="p">,</span> <span class="n">binmax</span><span class="p">,</span> <span class="n">obs_err</span><span class="p">,</span> <span class="n">obs_vector</span> <span class="o">=</span> <span class="n">load_correlation_file</span><span class="p">(</span><span class="n">obs_filename</span><span class="p">(</span><span class="n">param_files</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+
+	<span class="k">if</span> <span class="n">load_scalar</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+		<span class="n">nbins</span> <span class="o">=</span> <span class="mi">1</span>
+	<span class="k">else</span><span class="p">:</span>
+		<span class="n">nbins</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">binmin</span><span class="p">)</span>
+
+	<span class="n">nobs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">param_files</span><span class="p">)</span>
+	<span class="n">nparams</span> <span class="o">=</span> <span class="mi">17</span>
+
+	<span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nobs</span><span class="p">,</span> <span class="n">nparams</span><span class="p">))</span>
+	<span class="n">Y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nbins</span><span class="p">,</span> <span class="n">nobs</span><span class="p">))</span>
+	<span class="n">Yerr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nbins</span><span class="p">,</span> <span class="n">nobs</span><span class="p">))</span>
+	<span class="n">SimID</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">nobs</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span>
+	<span class="n">good_sample</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">nobs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">bool</span><span class="p">)</span>
+	<span class="n">good_sample</span><span class="p">[:]</span> <span class="o">=</span> <span class="kc">True</span>
+	
+	<span class="n">param_names_vector</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="s1">&#39;ngal&#39;</span><span class="p">,</span><span class="s1">&#39;siglogM&#39;</span><span class="p">,</span><span class="s1">&#39;M0_over_M1&#39;</span><span class="p">,</span><span class="s1">&#39;M1_over_Mmin&#39;</span><span class="p">,</span><span class="s1">&#39;alpha&#39;</span><span class="p">,</span>
+			<span class="s1">&#39;q_env&#39;</span><span class="p">,</span><span class="s1">&#39;del_gamma&#39;</span><span class="p">,</span><span class="s1">&#39;f_cen&#39;</span><span class="p">,</span><span class="s1">&#39;A_conc&#39;</span><span class="p">,</span><span class="s1">&#39;R_rescale&#39;</span><span class="p">,</span>
+			<span class="s1">&#39;redshift&#39;</span><span class="p">,</span><span class="s1">&#39;sigma_8&#39;</span><span class="p">,</span><span class="s1">&#39;H0&#39;</span><span class="p">,</span><span class="s1">&#39;ombh2&#39;</span><span class="p">,</span><span class="s1">&#39;omch2&#39;</span><span class="p">,</span><span class="s1">&#39;w0&#39;</span><span class="p">,</span><span class="s1">&#39;ns&#39;</span><span class="p">,</span><span class="s1">&#39;sim_id&#39;</span><span class="p">])</span>
+
+	<span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">param_file</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">param_files</span><span class="p">):</span>
+	
+		<span class="n">myconfigparser</span> <span class="o">=</span> <span class="n">configparser</span><span class="o">.</span><span class="n">ConfigParser</span><span class="p">()</span>
+		<span class="n">myconfigparser</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">param_file</span><span class="p">))</span>
+		<span class="n">hod_params</span> <span class="o">=</span> <span class="n">myconfigparser</span><span class="p">[</span><span class="s1">&#39;params&#39;</span><span class="p">]</span>
+
+		<span class="c1">## read in simulation file</span>
+		
+		<span class="n">simdir</span> <span class="o">=</span> <span class="n">hod_params</span><span class="p">[</span><span class="s1">&#39;dir&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">)</span>
+		<span class="n">subdir</span> <span class="o">=</span> <span class="n">sims_path</span> <span class="o">/</span> <span class="n">hod_params</span><span class="p">[</span><span class="s1">&#39;dir&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">)</span> <span class="o">/</span> <span class="n">redshift_dir</span>
+		<span class="n">header_file</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">subdir</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;/header&#39;</span>
+		<span class="n">cf</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">AbacusConfigFile</span><span class="p">(</span><span class="n">header_file</span><span class="p">)</span>
+		<span class="n">redshift</span> <span class="o">=</span> <span class="n">cf</span><span class="o">.</span><span class="n">redshift</span>
+		<span class="n">sigma_8</span> <span class="o">=</span> <span class="n">cf</span><span class="o">.</span><span class="n">sigma_8</span>
+		<span class="n">H0</span> <span class="o">=</span> <span class="n">cf</span><span class="o">.</span><span class="n">H0</span>
+		<span class="n">ombh2</span> <span class="o">=</span> <span class="n">cf</span><span class="o">.</span><span class="n">ombh2</span>
+		<span class="n">omch2</span> <span class="o">=</span> <span class="n">cf</span><span class="o">.</span><span class="n">omch2</span>
+		<span class="n">w0</span> <span class="o">=</span> <span class="n">cf</span><span class="o">.</span><span class="n">w0</span>
+		<span class="n">ns</span> <span class="o">=</span> <span class="n">cf</span><span class="o">.</span><span class="n">ns</span>
+
+		<span class="n">bias_file</span> <span class="o">=</span> <span class="n">obs_filename</span><span class="p">(</span><span class="n">param_file</span><span class="p">)</span>
+		<span class="k">if</span> <span class="ow">not</span> <span class="n">Path</span><span class="p">(</span><span class="n">bias_file</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+			<span class="k">continue</span> <span class="c1"># ignore missing files</span>
+
+		<span class="k">if</span> <span class="n">load_scalar</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+			<span class="n">obs_vector</span> <span class="o">=</span> <span class="n">load_scalar_file</span><span class="p">(</span><span class="n">bias_file</span><span class="p">)</span>
+			<span class="n">obs_err</span> <span class="o">=</span> <span class="p">(</span><span class="n">obs_vector</span> <span class="o">*</span> <span class="mf">1e-2</span><span class="p">)</span>	<span class="c1"># arbitrary</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="n">binmin</span><span class="p">,</span> <span class="n">binmax</span><span class="p">,</span> <span class="n">obs_err</span><span class="p">,</span> <span class="n">obs_vector</span> <span class="o">=</span> <span class="n">load_correlation_file</span><span class="p">(</span><span class="n">bias_file</span><span class="p">)</span>
+
+		<span class="n">hod_vector</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span> <span class="p">[</span> <span class="nb">float</span><span class="p">(</span><span class="n">hod_params</span><span class="p">[</span><span class="s1">&#39;ngal&#39;</span><span class="p">]),</span>
+								 <span class="nb">float</span><span class="p">(</span><span class="n">hod_params</span><span class="p">[</span><span class="s1">&#39;siglogM&#39;</span><span class="p">]),</span>
+								 <span class="nb">float</span><span class="p">(</span><span class="n">hod_params</span><span class="p">[</span><span class="s1">&#39;M0_over_M1&#39;</span><span class="p">]),</span>
+								 <span class="nb">float</span><span class="p">(</span><span class="n">hod_params</span><span class="p">[</span><span class="s1">&#39;M1_over_Mmin&#39;</span><span class="p">]),</span>
+								 <span class="nb">float</span><span class="p">(</span><span class="n">hod_params</span><span class="p">[</span><span class="s1">&#39;alpha&#39;</span><span class="p">]),</span>
+								 <span class="nb">float</span><span class="p">(</span><span class="n">hod_params</span><span class="p">[</span><span class="s1">&#39;q_env&#39;</span><span class="p">]),</span>
+								 <span class="nb">float</span><span class="p">(</span><span class="n">hod_params</span><span class="p">[</span><span class="s1">&#39;del_gamma&#39;</span><span class="p">]),</span>
+								 <span class="nb">float</span><span class="p">(</span><span class="n">hod_params</span><span class="p">[</span><span class="s1">&#39;f_cen&#39;</span><span class="p">]),</span>
+								 <span class="nb">float</span><span class="p">(</span><span class="n">hod_params</span><span class="p">[</span><span class="s1">&#39;A_conc&#39;</span><span class="p">]),</span>
+								 <span class="nb">float</span><span class="p">(</span><span class="n">hod_params</span><span class="p">[</span><span class="s1">&#39;R_rescale&#39;</span><span class="p">])</span> <span class="p">])</span>
+
+
+		<span class="n">cosmo_vector</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">redshift</span><span class="p">,</span> <span class="n">sigma_8</span><span class="p">,</span> <span class="n">H0</span><span class="p">,</span> <span class="n">ombh2</span><span class="p">,</span> <span class="n">omch2</span><span class="p">,</span> <span class="n">w0</span><span class="p">,</span> <span class="n">ns</span><span class="p">])</span>
+		<span class="n">this_param_vector</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">hod_vector</span><span class="p">,</span> <span class="n">cosmo_vector</span><span class="p">])</span>
+
+		<span class="c1">## reject extreme samples (*and* delete these rows from the arrays)</span>
+<span class="c1">#		if (alpha &gt; 1.8):  # most of the difficulty is predicting high alpha models</span>
+<span class="c1">#		if (M1_over_Mmin &lt; 8.0 and alpha &lt; 0.7):</span>
+<span class="c1">#			good_sample[j] = False</span>
+
+		<span class="k">assert</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">obs_err</span> <span class="o">&gt;</span> <span class="mf">0.</span><span class="p">))</span>
+
+		<span class="n">X</span><span class="p">[</span><span class="n">j</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">this_param_vector</span>
+		<span class="n">Y</span><span class="p">[:,</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">obs_vector</span>
+		<span class="n">Yerr</span><span class="p">[:,</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">obs_err</span>
+		<span class="n">SimID</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">simdir</span>
+
+
+	<span class="c1">## delete rows of X, Y, Yerr that have np.NaN entries</span>
+	
+	<span class="n">mask</span> <span class="o">=</span> <span class="n">good_sample</span>
+	<span class="n">X</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="n">mask</span><span class="p">,</span> <span class="p">:]</span>
+	<span class="n">Y</span> <span class="o">=</span> <span class="n">Y</span><span class="p">[:,</span> <span class="n">mask</span><span class="p">]</span>
+	<span class="n">Yerr</span> <span class="o">=</span> <span class="n">Yerr</span><span class="p">[:,</span> <span class="n">mask</span><span class="p">]</span>
+	<span class="n">SimID</span> <span class="o">=</span> <span class="n">SimID</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+	<span class="n">good_param_files</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">param_files</span><span class="p">)[</span><span class="n">mask</span><span class="p">]</span>
+	
+	<span class="c1">## delete columns of X that have zero variance (for numerical stability)</span>
+
+	<span class="n">idx</span> <span class="o">=</span> <span class="p">[]</span>
+	<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+		<span class="n">x</span> <span class="o">=</span> <span class="n">X</span><span class="p">[:,</span><span class="n">i</span><span class="p">]</span>
+		<span class="n">var</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+		<span class="n">eps</span> <span class="o">=</span> <span class="mf">1e-15</span>
+		<span class="k">if</span> <span class="n">var</span> <span class="o">&gt;</span> <span class="n">eps</span><span class="p">:</span>
+			<span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;variance for parameter </span><span class="si">{i}</span><span class="s2"> [</span><span class="si">{param_names_vector[i]}</span><span class="s2">] = </span><span class="si">{var}</span><span class="s2">; range = [{np.min(x)}, {np.max(x)}]&quot;</span><span class="p">)</span>
+			<span class="n">idx</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+
+	<span class="c1">## remove zero-variance columns</span>
+
+	<span class="n">X</span> <span class="o">=</span> <span class="n">X</span><span class="p">[:,</span><span class="n">idx</span><span class="p">]</span>
+	<span class="n">param_names</span> <span class="o">=</span> <span class="n">param_names_vector</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+
+	<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;nparams: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+	<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;nobs: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+
+	<span class="k">if</span> <span class="n">load_scalar</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+		<span class="n">binmin</span> <span class="o">=</span> <span class="mf">0.</span>
+		<span class="n">binmax</span> <span class="o">=</span> <span class="mf">0.</span>
+
+	<span class="k">return</span> <span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">Yerr</span><span class="p">,</span> <span class="n">SimID</span><span class="p">,</span> <span class="n">binmin</span><span class="p">,</span> <span class="n">binmax</span><span class="p">,</span> <span class="n">param_names</span><span class="p">,</span> <span class="n">good_param_files</span></div>
+
+
+<div class="viewcode-block" id="fit_data"><a class="viewcode-back" href="../fit_data.html#fit_data.fit_data">[docs]</a><span class="k">def</span> <span class="nf">fit_data</span><span class="p">(</span><span class="n">sims_dir</span><span class="p">,</span> <span class="n">redshift_dir</span><span class="p">,</span> <span class="n">param_files</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span>
+			 <span class="n">output_emu_filename</span><span class="p">,</span> <span class="n">obs_filename_ext</span><span class="p">,</span> <span class="n">load_scalar</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+			
+	<span class="sd">&quot;&quot;&quot;fit data with a linear least-squares model&quot;&quot;&quot;</span>
+
+	<span class="n">x</span><span class="p">,</span> <span class="n">y_allbins</span><span class="p">,</span> <span class="n">yerr_allbins</span><span class="p">,</span> <span class="n">sim_ids</span><span class="p">,</span> <span class="n">binmin</span><span class="p">,</span> <span class="n">binmax</span><span class="p">,</span> <span class="n">param_names</span><span class="p">,</span> <span class="n">param_files_used</span> <span class="o">=</span> \
+			<span class="n">read_data</span><span class="p">(</span><span class="n">sims_dir</span><span class="p">,</span> <span class="n">redshift_dir</span><span class="p">,</span> <span class="n">param_files</span><span class="p">,</span> <span class="n">filename_ext</span><span class="o">=</span><span class="n">obs_filename_ext</span><span class="p">,</span>
+						<span class="n">load_scalar</span><span class="o">=</span><span class="n">load_scalar</span><span class="p">)</span>
+
+	<span class="n">binmed</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">binmin</span><span class="o">+</span><span class="n">binmax</span><span class="p">)</span>
+	
+	<span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;binmin = </span><span class="si">{binmin}</span><span class="s2">&quot;</span><span class="p">)</span>
+	<span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;binmax = </span><span class="si">{binmax}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+	<span class="c1"># solve: min_c { |Y - Kc|^2 + Lambda |c|^2 }</span>
+	<span class="c1"># solution: c = K^{-1} Y</span>
+	
+	<span class="n">X</span> <span class="o">=</span> <span class="n">compute_labels</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="c1"># can modify zero-point, take logarithms, etc.</span>
+	<span class="n">x0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+
+	<span class="n">coefs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">y_allbins</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+	<span class="n">kernel_hypers</span> <span class="o">=</span> <span class="p">[]</span>
+	<span class="n">y_mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">y_allbins</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+	<span class="n">y_sigma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">y_allbins</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+	<span class="n">sim_label</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">sim_ids</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;category&quot;</span><span class="p">)</span>
+
+	<span class="n">rms_looe</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">y_allbins</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+	<span class="n">rms_residuals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">y_allbins</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="c1">#	rms_kfold = np.zeros(y_allbins.shape[0])</span>
+	<span class="n">rms_simfold</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">y_allbins</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+	<span class="n">frac_rms_looe</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">y_allbins</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+	<span class="n">frac_rms_residuals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">y_allbins</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="c1">#	frac_rms_kfold = np.zeros(y_allbins.shape[0])</span>
+	<span class="n">frac_rms_simfold</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">y_allbins</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+	<span class="n">looe_err_vectors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">y_allbins</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+	<span class="n">simfold_err_vectors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">y_allbins</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+	<span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">y_allbins</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+	
+		<span class="n">y</span> <span class="o">=</span> <span class="n">y_allbins</span><span class="p">[</span><span class="n">j</span><span class="p">,:]</span>
+		<span class="n">yerr</span> <span class="o">=</span> <span class="n">yerr_allbins</span><span class="p">[</span><span class="n">j</span><span class="p">,:]</span>
+		<span class="n">y0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+		<span class="n">sigma_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
+		<span class="n">y_mean</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">y0</span>
+		<span class="n">y_sigma</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">sigma_y</span>
+		<span class="n">Y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">matrix</span><span class="p">((</span><span class="n">y</span><span class="o">-</span><span class="n">y0</span><span class="p">)</span><span class="o">/</span><span class="n">sigma_y</span><span class="p">)</span><span class="o">.</span><span class="n">T</span> <span class="c1"># column vector</span>
+		<span class="n">Yerr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">matrix</span><span class="p">(</span><span class="n">yerr</span><span class="o">/</span><span class="n">sigma_y</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+
+		<span class="n">c</span><span class="p">,</span> <span class="n">rms_LOOE_norm</span><span class="p">,</span> <span class="n">best_lambda</span><span class="p">,</span> <span class="n">best_h</span><span class="p">,</span> <span class="n">logp</span><span class="p">,</span> <span class="n">err_vector</span><span class="p">,</span> <span class="n">generic_kernel</span> <span class="o">=</span> \
+										<span class="n">fit_hyperparameters</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">X</span><span class="p">,</span><span class="n">Yerr</span><span class="p">,</span><span class="n">kernel</span><span class="o">=</span><span class="n">kernel</span><span class="p">)</span>
+		<span class="n">coefs</span><span class="p">[</span><span class="n">j</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+		<span class="n">kernel_hypers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">best_lambda</span><span class="p">]),</span> <span class="n">best_h</span><span class="p">]))</span>
+		<span class="n">looe_err_vectors</span><span class="p">[</span><span class="n">j</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">err_vector</span>
+		
+		<span class="n">y_model_x</span> <span class="o">=</span> <span class="n">sigma_y</span><span class="o">*</span><span class="n">model_data</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">best_h</span><span class="p">,</span> <span class="n">generic_kernel</span><span class="p">)</span> <span class="o">+</span> <span class="n">y0</span>
+		<span class="n">rms_model_residuals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">((</span><span class="n">y_model_x</span> <span class="o">-</span> <span class="n">y</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+		
+		<span class="n">rms_looe</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">sigma_y</span><span class="o">*</span><span class="n">rms_LOOE_norm</span>
+		<span class="n">rms_residuals</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">rms_model_residuals</span>
+		<span class="n">frac_rms_looe</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">sigma_y</span><span class="o">*</span><span class="n">rms_LOOE_norm</span> <span class="o">/</span> <span class="n">y_mean</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+		<span class="n">frac_rms_residuals</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">rms_model_residuals</span> <span class="o">/</span> <span class="n">y_mean</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+
+
+		<span class="c1">## at fixed hyperparameters, compute Nsim-fold cross-validation</span>
+
+		<span class="n">norm_simfold_cv</span> <span class="o">=</span> <span class="mf">0.</span>
+		<span class="n">simfolds</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">sim_label</span><span class="o">.</span><span class="n">cat</span><span class="o">.</span><span class="n">categories</span><span class="p">)</span>
+
+		<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">simfolds</span><span class="p">):</span>
+
+			<span class="c1">## select fold k of data</span>
+
+			<span class="n">Nobs</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+			<span class="n">this_sim</span> <span class="o">=</span> <span class="n">sim_label</span><span class="o">.</span><span class="n">cat</span><span class="o">.</span><span class="n">categories</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+			<span class="n">mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">sim_label</span> <span class="o">==</span> <span class="n">this_sim</span><span class="p">)</span>
+			
+			<span class="n">X_k_input</span>   	<span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="o">~</span><span class="n">mask</span><span class="p">,:]</span>
+			<span class="n">y_k_input</span>   	<span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="o">~</span><span class="n">mask</span><span class="p">]</span>
+			<span class="n">yerr_k_input</span>	<span class="o">=</span> <span class="n">yerr</span><span class="p">[</span><span class="o">~</span><span class="n">mask</span><span class="p">]</span>
+
+			<span class="n">X_k_holdout</span> 	<span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="n">mask</span><span class="p">,:]</span>
+			<span class="n">y_k_holdout</span> 	<span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+			<span class="n">yerr_k_holdout</span>  <span class="o">=</span> <span class="n">yerr</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+
+			<span class="c1">## fit model (using fixed hyperparameters)</span>
+			
+			<span class="n">K_k</span> <span class="o">=</span> <span class="n">compute_kernel</span><span class="p">(</span><span class="n">X_k_input</span><span class="p">,</span> <span class="n">best_h</span><span class="p">,</span> <span class="n">generic_kernel</span><span class="p">)</span>
+			<span class="n">Y_k</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">matrix</span><span class="p">((</span><span class="n">y_k_input</span> <span class="o">-</span> <span class="n">y0</span><span class="p">)</span><span class="o">/</span><span class="n">sigma_y</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+			<span class="n">Yerr_k</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">matrix</span><span class="p">(</span><span class="n">yerr_k_input</span><span class="o">/</span><span class="n">sigma_y</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+			
+			<span class="n">c_k</span><span class="p">,</span> <span class="n">rms_LOOE_norm_k</span><span class="p">,</span> <span class="n">logp_k</span><span class="p">,</span> <span class="n">err_vec_k</span> <span class="o">=</span> <span class="n">fit_data_with_kernel</span><span class="p">(</span><span class="n">Y_k</span><span class="p">,</span><span class="n">K_k</span><span class="p">,</span><span class="n">Yerr_k</span><span class="p">,</span><span class="n">best_lambda</span><span class="p">)</span>
+			<span class="n">y_model_holdout</span> <span class="o">=</span> <span class="n">y0</span> <span class="o">+</span> <span class="n">sigma_y</span><span class="o">*</span><span class="n">model_data</span><span class="p">(</span><span class="n">X_k_input</span><span class="p">,</span> <span class="n">X_k_holdout</span><span class="p">,</span>
+													  <span class="n">c_k</span><span class="p">,</span> <span class="n">best_h</span><span class="p">,</span> <span class="n">generic_kernel</span><span class="p">)</span>
+			<span class="n">simfold_err_vectors</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">y_model_holdout</span> <span class="o">-</span> <span class="n">y_k_holdout</span><span class="p">)</span>
+			<span class="n">norm_simfold_cv</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">((</span><span class="n">y_model_holdout</span> <span class="o">-</span> <span class="n">y_k_holdout</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="n">simfolds</span>
+
+
+		<span class="c1">## at fixed hyperparameters, compute k-fold cross-validation</span>
+		
+<span class="c1">#		norm_kfold_cv = 0.</span>
+<span class="c1">#		kfolds = 5</span>
+		
+<span class="c1">#		for k in range(kfolds):</span>
+<span class="c1">#		</span>
+<span class="c1">#			## select fold k of data</span>
+<span class="c1">#</span>
+<span class="c1">#			Nobs = X.shape[0]</span>
+<span class="c1">#			mask = np.zeros(Nobs,dtype=bool)</span>
+<span class="c1">#			chunk_size = (Nobs // kfolds)</span>
+<span class="c1">#			idx_min = chunk_size*k</span>
+<span class="c1">#			</span>
+<span class="c1">#			if k == kfolds-1:</span>
+<span class="c1">#				idx_max = Nobs</span>
+<span class="c1">#			else:</span>
+<span class="c1">#				idx_max = chunk_size*(k+1)</span>
+<span class="c1">#				</span>
+<span class="c1">#			mask[idx_min:idx_max] = True</span>
+<span class="c1">#			X_k_input   	= X[~mask,:]</span>
+<span class="c1">#			y_k_input   	= y[~mask]</span>
+<span class="c1">#			yerr_k_input	= yerr[~mask]</span>
+<span class="c1">#			X_k_holdout 	= X[mask,:]</span>
+<span class="c1">#			y_k_holdout 	= y[mask]</span>
+<span class="c1">#			yerr_k_holdout  = yerr[mask]</span>
+<span class="c1">#</span>
+<span class="c1">#			## fit model (using fixed hyperparameters)</span>
+<span class="c1">#			</span>
+<span class="c1">#			K_k = compute_kernel(X_k_input, best_h, generic_kernel)</span>
+<span class="c1">#			Y_k = np.matrix((y_k_input - y0)/sigma_y).T</span>
+<span class="c1">#			Yerr_k = np.matrix(yerr_k_input/sigma_y).T</span>
+<span class="c1">#			</span>
+<span class="c1">#			c_k, rms_LOOE_norm_k, logp_k, err_vec_k = \</span>
+<span class="c1">#									fit_data_with_kernel(Y_k,K_k,Yerr_k,best_lambda)</span>
+<span class="c1">#			y_model_holdout = y0 + sigma_y*model_data(X_k_input, X_k_holdout,</span>
+<span class="c1">#													  c_k, best_h, generic_kernel)</span>
+<span class="c1">#			norm_kfold_cv += np.mean((y_model_holdout - y_k_holdout)**2) / kfolds</span>
+<span class="c1">#</span>
+<span class="c1">#</span>
+<span class="c1">#		rms_kfold_cv = np.sqrt(norm_kfold_cv)</span>
+<span class="c1">#		rms_kfold[j] = rms_kfold_cv</span>
+<span class="c1">#		frac_rms_kfold[j] = rms_kfold_cv / y_mean[j]</span>
+
+		<span class="n">rms_simfold_cv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">norm_simfold_cv</span><span class="p">)</span>
+		<span class="n">rms_simfold</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">rms_simfold_cv</span>
+		<span class="n">frac_rms_simfold</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">rms_simfold_cv</span> <span class="o">/</span> <span class="n">y_mean</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+
+		<span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;[bin </span><span class="si">{j}</span><span class="s1">] frac rms model residuals = </span><span class="si">{frac_rms_residuals[j]}</span><span class="s1">&#39;</span><span class="p">)</span>
+		<span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;[bin </span><span class="si">{j}</span><span class="s1">] frac rms leave-one-out error: </span><span class="si">{frac_rms_looe[j]}</span><span class="s1">&#39;</span><span class="p">)</span>
+		<span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;[bin </span><span class="si">{j}</span><span class="s1">] frac rms N_sim(</span><span class="si">{simfolds}</span><span class="s1">)-fold CV error: </span><span class="si">{frac_rms_simfold[j]}</span><span class="s1">&#39;</span><span class="p">)</span>
+		<span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;[bin </span><span class="si">{j}</span><span class="s1">] best L2-regularization hyperparameter = </span><span class="si">{best_lambda}</span><span class="s1">&#39;</span><span class="p">)</span>
+		<span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;[bin </span><span class="si">{j}</span><span class="s1">] log pseudo-likelihood: </span><span class="si">{logp}</span><span class="s1">&#39;</span><span class="p">)</span>
+		<span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;[bin </span><span class="si">{j}</span><span class="s1">] best scale hyperparameters = </span><span class="si">{best_h}</span><span class="s1">&#39;</span><span class="p">)</span>
+		<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+
+
+	<span class="c1">## save emulator</span>
+	
+	<span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">output_emu_filename</span><span class="p">,</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+	
+		<span class="n">utf8_param_files</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;UTF-8&quot;</span><span class="p">,</span> <span class="s2">&quot;ignore&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">param_files_used</span><span class="p">]</span>
+		<span class="n">utf8_param_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;UTF-8&quot;</span><span class="p">,</span> <span class="s2">&quot;ignore&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">param_names</span><span class="p">]</span>
+	
+		<span class="n">f</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">&quot;this_filename&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">output_emu_filename</span><span class="p">)</span>
+		<span class="n">f</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">&quot;simulations_dir&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">sims_dir</span><span class="p">)</span>
+		<span class="n">f</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">&quot;redshift_dir&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">redshift_dir</span><span class="p">)</span>
+		<span class="n">f</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">&quot;param_files_inputs&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">utf8_param_files</span><span class="p">)</span>
+		<span class="n">f</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">&quot;filename_extension_inputs&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">obs_filename_ext</span><span class="p">)</span>
+		<span class="n">f</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">&quot;param_names_inputs&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">utf8_param_names</span><span class="p">)</span>
+		<span class="n">f</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">&quot;rbins_min&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">binmin</span><span class="p">)</span>
+		<span class="n">f</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">&quot;rbins_max&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">binmax</span><span class="p">)</span>
+		
+		<span class="n">f</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">&quot;raw_training_inputs&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">x</span><span class="p">)</span>
+		<span class="n">f</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">&quot;raw_training_outputs&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">y_allbins</span><span class="p">)</span>
+		<span class="n">f</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">&quot;err_raw_training_outputs&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">yerr_allbins</span><span class="p">)</span>
+
+		<span class="n">f</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">&quot;normalized_training_inputs&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">X</span><span class="p">)</span>
+		<span class="n">f</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">&quot;mean_training_outputs&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">y_mean</span><span class="p">)</span>
+		<span class="n">f</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">&quot;stdev_training_outputs&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">y_sigma</span><span class="p">)</span>
+		
+		<span class="n">f</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">&quot;best_fit_coefs&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">coefs</span><span class="p">)</span>
+		<span class="n">f</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">&quot;looe_err_vectors&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">looe_err_vectors</span><span class="p">)</span>
+		<span class="n">f</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">&quot;simfold_err_vectors&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">simfold_err_vectors</span><span class="p">)</span>
+		<span class="n">f</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">&quot;rms_loo_cv_err&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">rms_looe</span><span class="p">)</span>
+		<span class="n">f</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">&quot;rms_simfold_cv_err&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">rms_simfold</span><span class="p">)</span>
+		<span class="n">f</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">&quot;rms_residuals&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">rms_residuals</span><span class="p">)</span>
+<span class="c1">#		f.create_dataset(&quot;rms_kfold_cv_err&quot;, data=rms_kfold)</span>
+		
+		<span class="n">f</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">&quot;gp_kernel_hyperparameters&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">kernel_hypers</span><span class="p">))</span>
+		<span class="n">f</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">&quot;gp_kernel_name&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">kernel</span><span class="p">)</span>
+		<span class="n">f</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">&quot;gp_kernel_sourcecode&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">inspect</span><span class="o">.</span><span class="n">getsource</span><span class="p">(</span><span class="n">generic_kernel</span><span class="p">))</span></div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+
+	<span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+	
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;output_emu_filename&#39;</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;sims_dir&#39;</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;redshift_dir&#39;</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;param_files&#39;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s1">&#39;*&#39;</span><span class="p">)</span>
+	
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--kernel&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;sqrexp&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--obs_ext&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+	
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--load-scalar&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">)</span>
+
+	<span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+	
+	<span class="n">fit_data</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">sims_dir</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">redshift_dir</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">param_files</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">kernel</span><span class="p">,</span>
+			 <span class="n">args</span><span class="o">.</span><span class="n">output_emu_filename</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">obs_ext</span><span class="p">,</span> <span class="n">load_scalar</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">load_scalar</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Ben Wibking
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

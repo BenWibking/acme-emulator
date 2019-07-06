@@ -1,0 +1,290 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>compute_zeff &mdash; ACME Emulator  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> ACME Emulator
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ACME Emulator</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">Module code</a> &raquo;</li>
+        
+      <li>compute_zeff</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for compute_zeff</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">scipy.integrate</span>
+<span class="kn">import</span> <span class="nn">argparse</span>
+
+
+<div class="viewcode-block" id="comoving"><a class="viewcode-back" href="../compute_zeff.html#compute_zeff.comoving">[docs]</a><span class="k">def</span> <span class="nf">comoving</span><span class="p">(</span><span class="n">redshift</span><span class="p">,</span> <span class="n">Omega_m</span><span class="o">=</span><span class="mf">0.3</span><span class="p">):</span>
+
+	<span class="sd">&quot;&quot;&quot;compute comoving radial distance to redshift &#39;redshift&#39; in flat LCDM.&quot;&quot;&quot;</span>
+
+	<span class="n">norm_fac</span> <span class="o">=</span> <span class="mf">3000.0</span> <span class="c1"># Mpc/h</span>
+	<span class="n">E</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">z</span><span class="p">:</span> <span class="n">Omega_m</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">z</span><span class="p">)</span><span class="o">**</span><span class="mi">3</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">Omega_m</span><span class="p">)</span>	<span class="c1"># ignore radiation, neutrinos, etc.</span>
+	<span class="n">integrand</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">z</span><span class="p">:</span> <span class="mf">1.0</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">E</span><span class="p">(</span><span class="n">z</span><span class="p">))</span>
+	<span class="n">chi</span> <span class="o">=</span> <span class="n">norm_fac</span> <span class="o">*</span> <span class="n">scipy</span><span class="o">.</span><span class="n">integrate</span><span class="o">.</span><span class="n">quad</span><span class="p">(</span><span class="n">integrand</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="n">redshift</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>	<span class="c1"># Mpc/h units</span>
+
+	<span class="k">return</span> <span class="n">chi</span></div>
+
+
+<div class="viewcode-block" id="sigma_crit"><a class="viewcode-back" href="../compute_zeff.html#compute_zeff.sigma_crit">[docs]</a><span class="k">def</span> <span class="nf">sigma_crit</span><span class="p">(</span><span class="n">z_lens</span><span class="p">,</span> <span class="n">z_source</span><span class="p">,</span> <span class="n">Omega_m</span><span class="o">=</span><span class="mf">0.3</span><span class="p">):</span>
+
+	<span class="n">D_H</span> <span class="o">=</span> <span class="mf">3000.0</span>  <span class="c1"># Mpc/h</span>
+	<span class="n">D_H_pc</span> <span class="o">=</span> <span class="n">D_H</span> <span class="o">*</span> <span class="mf">1.0e6</span>  <span class="c1"># pc/h</span>
+	<span class="n">three_csq_over_8piG</span> <span class="o">=</span> <span class="mf">2.494e12</span>  <span class="c1"># 3c^2/(8*pi*G) Msun pc^-1</span>
+	<span class="n">csq_over_4piG</span> <span class="o">=</span> <span class="n">three_csq_over_8piG</span> <span class="o">*</span> <span class="p">(</span><span class="mf">2.</span> <span class="o">/</span> <span class="mf">3.</span><span class="p">)</span>
+	<span class="n">Omega_L</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">Omega_m</span>
+
+	<span class="n">integrand</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">z</span><span class="p">:</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">Omega_m</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">z</span><span class="p">)</span><span class="o">**</span><span class="mi">3</span> <span class="o">+</span> <span class="n">Omega_L</span><span class="p">)</span>
+	<span class="n">D_lens</span> <span class="o">=</span> <span class="n">D_H_pc</span> <span class="o">*</span> <span class="n">scipy</span><span class="o">.</span><span class="n">integrate</span><span class="o">.</span><span class="n">quad</span><span class="p">(</span><span class="n">integrand</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="n">z_lens</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+	<span class="n">D_source</span> <span class="o">=</span> <span class="n">D_H_pc</span> <span class="o">*</span> <span class="n">scipy</span><span class="o">.</span><span class="n">integrate</span><span class="o">.</span><span class="n">quad</span><span class="p">(</span><span class="n">integrand</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="n">z_source</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+	<span class="n">dist_fac</span> <span class="o">=</span> <span class="n">D_source</span> <span class="o">/</span> <span class="p">((</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">z_lens</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">D_lens</span> <span class="o">*</span> <span class="p">(</span><span class="n">D_source</span> <span class="o">-</span> <span class="n">D_lens</span><span class="p">)))</span>
+	<span class="n">sigma_c</span> <span class="o">=</span> <span class="n">csq_over_4piG</span> <span class="o">*</span> <span class="n">dist_fac</span>  <span class="c1"># h Msun pc^-2</span>
+	<span class="k">return</span> <span class="n">sigma_c</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+
+	<span class="sd">&quot;&quot;&quot;compute the effective redshift for clustering (or lensing)</span>
+<span class="sd">	given an input dn/dz (and dn_src/dz).&quot;&quot;&quot;</span>
+
+	<span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;input_dndz&#39;</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--sources&#39;</span><span class="p">)</span>
+	<span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+	<span class="n">vec_comoving</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vectorize</span><span class="p">(</span><span class="n">comoving</span><span class="p">)</span>
+	<span class="n">vec_sigma_crit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vectorize</span><span class="p">(</span><span class="n">sigma_crit</span><span class="p">)</span>
+
+	<span class="n">omegam</span> <span class="o">=</span> <span class="mf">0.3</span>
+
+
+	<span class="c1">## read in dn/dz (lenses)</span>
+
+	<span class="n">zcen</span><span class="p">,</span> <span class="n">zlow</span><span class="p">,</span> <span class="n">zhigh</span><span class="p">,</span> <span class="n">nbar</span><span class="p">,</span> <span class="n">wfkp</span><span class="p">,</span> <span class="n">shell_vol</span><span class="p">,</span> <span class="n">Ngals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">genfromtxt</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">input_dndz</span><span class="p">,</span> <span class="n">unpack</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+	<span class="c1">## restrict to 0.16 &lt; z &lt; 0.36</span>
+	<span class="n">zmin</span> <span class="o">=</span> <span class="mf">0.16</span>
+	<span class="n">zmax</span> <span class="o">=</span> <span class="mf">0.36</span>
+	<span class="n">zmask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span> <span class="n">zlow</span> <span class="o">&gt;</span> <span class="n">zmin</span><span class="p">,</span> <span class="n">zhigh</span> <span class="o">&lt;</span> <span class="n">zmax</span> <span class="p">)</span>
+	<span class="nb">print</span><span class="p">(</span><span class="n">zcen</span><span class="p">[</span><span class="n">zmask</span><span class="p">])</span>
+	<span class="n">Ngals</span><span class="p">[</span><span class="o">~</span><span class="n">zmask</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.</span>
+
+	<span class="n">dz</span> <span class="o">=</span> <span class="n">zhigh</span> <span class="o">-</span> <span class="n">zlow</span>
+	<span class="n">dndz</span> <span class="o">=</span> <span class="n">Ngals</span> <span class="o">/</span> <span class="n">dz</span>
+	<span class="n">chi</span> <span class="o">=</span> <span class="n">vec_comoving</span><span class="p">(</span><span class="n">zcen</span><span class="p">)</span>
+	<span class="n">dchidz</span> <span class="o">=</span> <span class="mf">3000.0</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span> <span class="n">omegam</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">zcen</span><span class="p">)</span><span class="o">**</span><span class="mi">3</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">omegam</span><span class="p">)</span> <span class="p">)</span>
+	<span class="n">dV_dz</span> <span class="o">=</span> <span class="n">chi</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">dchidz</span>
+	
+	<span class="n">clustering_weights</span> <span class="o">=</span> <span class="p">(</span><span class="n">dndz</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="n">dV_dz</span><span class="p">)</span>
+<span class="c1">#	zeff = np.sum(clustering_weights * zcen * dV_dz * dz) / np.sum(clustering_weights * dV_dz * dz)</span>
+	<span class="n">zeff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">clustering_weights</span> <span class="o">*</span> <span class="n">zcen</span> <span class="o">*</span> <span class="n">dz</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">clustering_weights</span> <span class="o">*</span> <span class="n">dz</span><span class="p">)</span>
+
+	<span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;zeff_clustering = </span><span class="si">{zeff}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+	
+	<span class="c1">## read in dn/dz (sources)</span>
+
+	<span class="n">zspec</span><span class="p">,</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span><span class="p">,</span> <span class="n">zphot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">genfromtxt</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">sources</span><span class="p">,</span> <span class="n">unpack</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+	<span class="n">Ns_counts</span><span class="p">,</span> <span class="n">bin_edges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span><span class="n">zspec</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">density</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+	<span class="n">dz_s</span> <span class="o">=</span> <span class="n">bin_edges</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">-</span> <span class="n">bin_edges</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+	<span class="n">zs_cen</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">bin_edges</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">+</span> <span class="n">bin_edges</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+	<span class="n">dns_dz</span> <span class="o">=</span> <span class="n">Ns_counts</span> <span class="o">/</span> <span class="n">dz_s</span>
+
+	<span class="k">def</span> <span class="nf">w_l</span><span class="p">(</span><span class="n">z_l</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;compute lensing weights.&quot;&quot;&quot;</span>
+
+		<span class="c1">## compute luminosity distances to z_l</span>
+		<span class="n">D_L</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">z_l</span><span class="p">)</span> <span class="o">*</span> <span class="n">comoving</span><span class="p">(</span><span class="n">z_l</span><span class="p">)</span>
+
+		<span class="c1">## compute Sigma_c integrated over dn_src/dz</span>
+		<span class="n">integrand</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">zs_cen</span><span class="p">)</span>
+		<span class="n">mask</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">zs_cen</span> <span class="o">&gt;</span> <span class="n">z_l</span><span class="p">])</span>	<span class="c1"># no lensing when z_s &lt;= z_l</span>
+
+		<span class="n">integrand</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">dns_dz</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">*</span> <span class="n">vec_sigma_crit</span><span class="p">(</span><span class="n">z_l</span><span class="p">,</span> <span class="n">zs_cen</span><span class="p">[</span><span class="n">mask</span><span class="p">])</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span>
+		<span class="n">integral</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">integrand</span> <span class="o">*</span> <span class="n">dz_s</span><span class="p">)</span>
+
+		<span class="k">return</span> <span class="n">D_L</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">z_l</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">integral</span>
+
+
+	<span class="n">vec_wl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vectorize</span><span class="p">(</span><span class="n">w_l</span><span class="p">)</span>
+	<span class="n">lensing_weights</span> <span class="o">=</span> <span class="n">dndz</span> <span class="o">*</span> <span class="n">vec_wl</span><span class="p">(</span><span class="n">zcen</span><span class="p">)</span>
+
+<span class="c1">#	zeff_lensing = np.sum(lensing_weights * zcen * dV_dz * dz) / np.sum(lensing_weights * dV_dz * dz)</span>
+	<span class="n">zeff_lensing</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">lensing_weights</span> <span class="o">*</span> <span class="n">zcen</span> <span class="o">*</span> <span class="n">dz</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">lensing_weights</span> <span class="o">*</span> <span class="n">dz</span><span class="p">)</span>
+
+	<span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;zeff_lensing = </span><span class="si">{zeff_lensing}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Ben Wibking
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

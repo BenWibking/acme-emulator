@@ -1,0 +1,383 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>compute_DeltaSigma &mdash; ACME Emulator  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> ACME Emulator
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ACME Emulator</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">Module code</a> &raquo;</li>
+        
+      <li>compute_DeltaSigma</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for compute_DeltaSigma</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">scipy.integrate</span> <span class="k">as</span> <span class="nn">integrate</span>
+<span class="kn">from</span> <span class="nn">compute_wp</span> <span class="k">import</span> <span class="n">elementwise_integral_secondorder</span>
+
+
+<div class="viewcode-block" id="wp"><a class="viewcode-back" href="../compute_DeltaSigma.html#compute_DeltaSigma.wp">[docs]</a><span class="k">def</span> <span class="nf">wp</span><span class="p">(</span><span class="n">rp</span><span class="p">,</span> <span class="n">binmin</span><span class="p">,</span> <span class="n">binmax</span><span class="p">,</span> <span class="n">xi</span><span class="p">,</span> <span class="n">pimax</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;compute wp(r_p) from tabulated xi(r).&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">elementwise_integral_secondorder</span><span class="p">(</span><span class="n">rp</span><span class="p">,</span> <span class="n">binmin</span><span class="p">,</span> <span class="n">binmax</span><span class="p">,</span> <span class="n">xi</span><span class="p">,</span> <span class="n">pimax</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="sigma_crit"><a class="viewcode-back" href="../compute_DeltaSigma.html#compute_DeltaSigma.sigma_crit">[docs]</a><span class="k">def</span> <span class="nf">sigma_crit</span><span class="p">(</span><span class="n">z_lens</span><span class="p">,</span> <span class="n">z_source</span><span class="p">,</span> <span class="n">Omega_m</span><span class="o">=</span><span class="mf">0.3</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;compute sigma_crit assuming the redshift distributions are delta functions.&quot;&quot;&quot;</span>
+    <span class="n">D_H</span> <span class="o">=</span> <span class="mf">3000.0</span>  <span class="c1"># Mpc/h</span>
+    <span class="n">D_H_pc</span> <span class="o">=</span> <span class="n">D_H</span> <span class="o">*</span> <span class="mf">1.0e6</span>  <span class="c1"># pc/h</span>
+    <span class="n">three_csq_over_8piG</span> <span class="o">=</span> <span class="mf">2.494e12</span>  <span class="c1"># 3c^2/(8*pi*G) Msun pc^-1</span>
+    <span class="n">csq_over_4piG</span> <span class="o">=</span> <span class="n">three_csq_over_8piG</span> <span class="o">*</span> <span class="p">(</span><span class="mf">2.</span> <span class="o">/</span> <span class="mf">3.</span><span class="p">)</span>
+    <span class="n">Omega_L</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">Omega_m</span>
+
+    <span class="n">integrand</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">z</span><span class="p">:</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">Omega_m</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">z</span><span class="p">)</span><span class="o">**</span><span class="mi">3</span> <span class="o">+</span> <span class="n">Omega_L</span><span class="p">)</span>
+    <span class="n">D_lens</span> <span class="o">=</span> <span class="n">D_H_pc</span> <span class="o">*</span> <span class="n">integrate</span><span class="o">.</span><span class="n">quad</span><span class="p">(</span><span class="n">integrand</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="n">z_lens</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">D_source</span> <span class="o">=</span> <span class="n">D_H_pc</span> <span class="o">*</span> <span class="n">integrate</span><span class="o">.</span><span class="n">quad</span><span class="p">(</span><span class="n">integrand</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="n">z_source</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">dist_fac</span> <span class="o">=</span> <span class="n">D_source</span> <span class="o">/</span> <span class="p">((</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">z_lens</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">D_lens</span> <span class="o">*</span> <span class="p">(</span><span class="n">D_source</span> <span class="o">-</span> <span class="n">D_lens</span><span class="p">)))</span>
+    <span class="n">sigma_c</span> <span class="o">=</span> <span class="n">csq_over_4piG</span> <span class="o">*</span> <span class="n">dist_fac</span>  <span class="c1"># h Msun pc^-2</span>
+    <span class="k">return</span> <span class="n">sigma_c</span></div>
+
+
+<div class="viewcode-block" id="DeltaSigma"><a class="viewcode-back" href="../compute_DeltaSigma.html#compute_DeltaSigma.DeltaSigma">[docs]</a><span class="k">def</span> <span class="nf">DeltaSigma</span><span class="p">(</span><span class="n">binmin</span><span class="p">,</span>
+               <span class="n">binmax</span><span class="p">,</span>
+               <span class="n">xi</span><span class="p">,</span>
+               <span class="n">pimax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+               <span class="n">H0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+               <span class="n">Omega_m</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+               <span class="n">Omega_m_fid</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span>
+               <span class="n">z_lens</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+               <span class="n">z_source</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+               <span class="n">rp_min</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+               <span class="n">rp_max</span><span class="o">=</span><span class="mf">30.0</span><span class="p">,</span>
+               <span class="n">nbins</span><span class="o">=</span><span class="mi">30</span><span class="p">):</span>
+    <span class="c1"># mean rho (in comoving Msun pc^-2, no little h)</span>
+    <span class="n">h</span> <span class="o">=</span> <span class="n">H0</span> <span class="o">/</span> <span class="mf">100.</span>
+    <span class="c1"># compute mean_rho (comoving density units = Msun pc^-3)</span>
+    <span class="n">speed_of_light_km_s</span> <span class="o">=</span> <span class="mf">2.998e5</span>  <span class="c1"># km/s</span>
+    <span class="n">csq_over_G</span> <span class="o">=</span> <span class="mf">2.494e12</span>  <span class="c1"># 3c^2/(8*pi*G) Msun pc^-1</span>
+    <span class="n">mean_rho</span> <span class="o">=</span> <span class="n">Omega_m</span> <span class="o">*</span> <span class="n">csq_over_G</span> <span class="o">*</span> <span class="p">(</span>
+        <span class="n">H0</span> <span class="o">/</span> <span class="n">speed_of_light_km_s</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="mf">1.0e12</span>  <span class="c1"># Msun pc^-3</span>
+
+    <span class="c1"># compute rp bins</span>
+    <span class="n">rp_bins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logspace</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">rp_min</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">rp_max</span><span class="p">),</span> <span class="n">nbins</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">rp_binmin</span> <span class="o">=</span> <span class="n">rp_bins</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">rp_binmax</span> <span class="o">=</span> <span class="n">rp_bins</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+    <span class="n">rp_mid_fid</span> <span class="o">=</span> <span class="p">(</span><span class="n">rp_binmin</span> <span class="o">+</span> <span class="n">rp_binmax</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span>
+
+    <span class="c1"># compute comoving distance ratios in true/fiducial cosmology</span>
+    <span class="n">E</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">z</span><span class="p">:</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">Omega_m</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">z</span><span class="p">)</span><span class="o">**</span><span class="mi">3</span> <span class="o">+</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">Omega_m</span><span class="p">))</span>
+    <span class="n">E_fid</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">z</span><span class="p">:</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">Omega_m_fid</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">z</span><span class="p">)</span><span class="o">**</span><span class="mi">3</span> <span class="o">+</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span>
+                                                                  <span class="n">Omega_m_fid</span><span class="p">))</span>
+    <span class="n">Rc_true</span> <span class="o">=</span> <span class="n">integrate</span><span class="o">.</span><span class="n">quad</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="n">z_lens</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">Rc_fid</span> <span class="o">=</span> <span class="n">integrate</span><span class="o">.</span><span class="n">quad</span><span class="p">(</span><span class="n">E_fid</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="n">z_lens</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">rp_mid</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">Rc_true</span> <span class="o">/</span> <span class="n">Rc_fid</span><span class="p">)</span> <span class="o">*</span> <span class="n">rp_mid_fid</span>  <span class="c1"># convert to true rp in this cosmology</span>
+
+    <span class="n">ds_true</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">rp_mid</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">integrand</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="n">r</span> <span class="o">*</span> <span class="n">wp</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">binmin</span><span class="p">,</span> <span class="n">binmax</span><span class="p">,</span> <span class="n">xi</span><span class="p">,</span> <span class="n">pimax</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">rp_mid</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="n">integral</span><span class="p">,</span> <span class="n">abserr</span> <span class="o">=</span> <span class="n">integrate</span><span class="o">.</span><span class="n">quad</span><span class="p">(</span>
+            <span class="n">integrand</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="n">rp_mid</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">epsabs</span><span class="o">=</span><span class="mf">1.0e-3</span><span class="p">,</span> <span class="n">epsrel</span><span class="o">=</span><span class="mf">1.0e-3</span><span class="p">)</span>
+        <span class="n">ds_true</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">integral</span> <span class="o">*</span> <span class="p">(</span><span class="mf">2.0</span> <span class="o">/</span> <span class="n">rp_mid</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="n">wp</span><span class="p">(</span>
+            <span class="n">rp_mid</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">binmin</span><span class="p">,</span> <span class="n">binmax</span><span class="p">,</span> <span class="n">xi</span><span class="p">,</span> <span class="n">pimax</span><span class="p">))</span> <span class="o">*</span> <span class="n">mean_rho</span>
+
+    <span class="c1"># convert Mpc/h unit to pc (no h)</span>
+    <span class="n">ds_true</span> <span class="o">*=</span> <span class="mf">1.0e6</span> <span class="o">/</span> <span class="n">h</span>
+ 
+    <span class="n">Sigma_c_true</span> <span class="o">=</span> <span class="n">sigma_crit</span><span class="p">(</span><span class="n">z_lens</span><span class="p">,</span> <span class="n">z_source</span><span class="p">,</span>
+    							<span class="n">Omega_m</span><span class="o">=</span><span class="n">Omega_m</span><span class="p">)</span>	 <span class="c1"># true Omega_m</span>
+    <span class="n">Sigma_c_assumed</span> <span class="o">=</span> <span class="n">sigma_crit</span><span class="p">(</span><span class="n">z_lens</span><span class="p">,</span> <span class="n">z_source</span><span class="p">,</span>
+    							<span class="n">Omega_m</span><span class="o">=</span><span class="n">Omega_m_fid</span><span class="p">)</span> <span class="c1"># assumed Omega_m when making measurement</span>
+    
+    <span class="n">gamma_t</span> <span class="o">=</span> <span class="n">ds_true</span> <span class="o">/</span> <span class="n">Sigma_c_true</span>		<span class="c1"># the observed gamma_t (in r_p units)</span>
+    <span class="n">ds_measured</span> <span class="o">=</span> <span class="n">gamma_t</span> <span class="o">*</span> <span class="n">Sigma_c_assumed</span>	<span class="c1"># the measured DeltaSigma</span>
+
+    <span class="k">return</span> <span class="n">rp_binmin</span><span class="p">,</span> <span class="n">rp_binmax</span><span class="p">,</span> <span class="n">ds_measured</span></div>
+
+
+<div class="viewcode-block" id="compute_gamma_t"><a class="viewcode-back" href="../compute_DeltaSigma.html#compute_DeltaSigma.compute_gamma_t">[docs]</a><span class="k">def</span> <span class="nf">compute_gamma_t</span><span class="p">(</span><span class="n">binmin</span><span class="p">,</span>
+                    <span class="n">binmax</span><span class="p">,</span>
+                    <span class="n">xi</span><span class="p">,</span>
+                    <span class="n">pimax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                    <span class="n">H0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                    <span class="n">Omega_m</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                    <span class="n">Omega_m_fid</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span>
+                    <span class="n">z_lens</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                    <span class="n">z_source</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                    <span class="n">rp_min</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+                    <span class="n">rp_max</span><span class="o">=</span><span class="mf">30.0</span><span class="p">,</span>
+                    <span class="n">nbins</span><span class="o">=</span><span class="mi">30</span><span class="p">):</span>
+    <span class="n">binmin</span><span class="p">,</span> <span class="n">binmax</span><span class="p">,</span> <span class="n">DS</span> <span class="o">=</span> <span class="n">DeltaSigma</span><span class="p">(</span>
+        <span class="n">binmin</span><span class="p">,</span>
+        <span class="n">binmax</span><span class="p">,</span>
+        <span class="n">xi</span><span class="p">,</span>
+        <span class="n">pimax</span><span class="o">=</span><span class="n">pimax</span><span class="p">,</span>
+        <span class="n">H0</span><span class="o">=</span><span class="n">H0</span><span class="p">,</span>
+        <span class="n">Omega_m</span><span class="o">=</span><span class="n">Omega_m</span><span class="p">,</span>
+        <span class="n">Omega_m_fid</span><span class="o">=</span><span class="n">Omega_m_fid</span><span class="p">,</span>
+        <span class="n">z_lens</span><span class="o">=</span><span class="n">z_lens</span><span class="p">,</span>
+        <span class="n">rp_min</span><span class="o">=</span><span class="n">rp_min</span><span class="p">,</span>
+        <span class="n">rp_max</span><span class="o">=</span><span class="n">rp_max</span><span class="p">,</span>
+        <span class="n">nbins</span><span class="o">=</span><span class="n">nbins</span><span class="p">)</span>
+    <span class="n">Sigma_c</span> <span class="o">=</span> <span class="n">sigma_crit</span><span class="p">(</span><span class="n">z_lens</span><span class="p">,</span> <span class="n">z_source</span><span class="p">,</span> <span class="n">Omega_m</span><span class="o">=</span><span class="n">Omega_m</span><span class="p">)</span>
+    <span class="n">gamma_t</span> <span class="o">=</span> <span class="n">DS</span> <span class="o">/</span> <span class="n">Sigma_c</span>
+    <span class="k">return</span> <span class="n">binmin</span><span class="p">,</span> <span class="n">binmax</span><span class="p">,</span> <span class="n">gamma_t</span></div>
+
+
+<div class="viewcode-block" id="DeltaSigma_from_files"><a class="viewcode-back" href="../compute_DeltaSigma.html#compute_DeltaSigma.DeltaSigma_from_files">[docs]</a><span class="k">def</span> <span class="nf">DeltaSigma_from_files</span><span class="p">(</span><span class="n">header_file</span><span class="p">,</span>
+                          <span class="n">filename</span><span class="p">,</span>
+                          <span class="n">output_file</span><span class="p">,</span>
+                          <span class="n">pimax</span><span class="p">,</span>
+                          <span class="n">z_lens</span><span class="p">,</span>
+                          <span class="n">z_source</span><span class="p">,</span>
+                          <span class="n">rp_min</span><span class="p">,</span>
+                          <span class="n">rp_max</span><span class="p">,</span>
+                          <span class="n">nbins</span><span class="p">,</span>
+                          <span class="n">compute_DS</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+                          
+    <span class="c1">## read in cosmological parameters from header_file</span>
+    
+    <span class="kn">import</span> <span class="nn">config</span>
+    <span class="n">cf</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">AbacusConfigFile</span><span class="p">(</span><span class="n">header_file</span><span class="p">)</span>
+    <span class="n">omega_m</span> <span class="o">=</span> <span class="n">cf</span><span class="o">.</span><span class="n">Omega_M</span>	<span class="c1"># at z=0</span>
+    <span class="n">H_0</span> <span class="o">=</span> <span class="mf">100.</span>				<span class="c1"># use h Msun pc^-3 units</span>
+
+    <span class="n">binmin</span><span class="p">,</span> <span class="n">binmax</span><span class="p">,</span> <span class="n">null</span><span class="p">,</span> <span class="n">xi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">unpack</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">compute_DS</span> <span class="o">==</span> <span class="kc">False</span><span class="p">:</span>
+        <span class="n">DS_binmin</span><span class="p">,</span> <span class="n">DS_binmax</span><span class="p">,</span> <span class="n">DS</span> <span class="o">=</span> <span class="n">compute_gamma_t</span><span class="p">(</span>
+            <span class="n">binmin</span><span class="p">,</span>
+            <span class="n">binmax</span><span class="p">,</span>
+            <span class="n">xi</span><span class="p">,</span>
+            <span class="n">pimax</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">pimax</span><span class="p">),</span>
+            <span class="n">H0</span><span class="o">=</span><span class="n">H_0</span><span class="p">,</span>
+            <span class="n">Omega_m</span><span class="o">=</span><span class="n">omega_m</span><span class="p">,</span>
+            <span class="n">z_lens</span><span class="o">=</span><span class="n">z_lens</span><span class="p">,</span>
+            <span class="n">z_source</span><span class="o">=</span><span class="n">z_source</span><span class="p">,</span>
+            <span class="n">rp_min</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">rp_min</span><span class="p">),</span>
+            <span class="n">rp_max</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">rp_max</span><span class="p">),</span>
+            <span class="n">nbins</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">nbins</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">DS_binmin</span><span class="p">,</span> <span class="n">DS_binmax</span><span class="p">,</span> <span class="n">DS</span> <span class="o">=</span> <span class="n">DeltaSigma</span><span class="p">(</span>
+            <span class="n">binmin</span><span class="p">,</span>
+            <span class="n">binmax</span><span class="p">,</span>
+            <span class="n">xi</span><span class="p">,</span>
+            <span class="n">pimax</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">pimax</span><span class="p">),</span>
+            <span class="n">H0</span><span class="o">=</span><span class="n">H_0</span><span class="p">,</span>
+            <span class="n">Omega_m</span><span class="o">=</span><span class="n">omega_m</span><span class="p">,</span>
+            <span class="n">z_lens</span><span class="o">=</span><span class="n">z_lens</span><span class="p">,</span>
+            <span class="n">z_source</span><span class="o">=</span><span class="n">z_source</span><span class="p">,</span>
+            <span class="n">rp_min</span><span class="o">=</span><span class="n">rp_min</span><span class="p">,</span>
+            <span class="n">rp_max</span><span class="o">=</span><span class="n">rp_max</span><span class="p">,</span>
+            <span class="n">nbins</span><span class="o">=</span><span class="n">nbins</span><span class="p">)</span>
+
+    <span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span>
+        <span class="n">output_file</span><span class="p">,</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">c_</span><span class="p">[</span><span class="n">DS_binmin</span><span class="p">,</span> <span class="n">DS_binmax</span><span class="p">,</span>
+              <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">DS</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">DS</span><span class="p">],</span>
+        <span class="n">delimiter</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+
+    <span class="kn">import</span> <span class="nn">argparse</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+    
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;input_file&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;header_file&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;output_file&#39;</span><span class="p">)</span>
+    
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--pimax&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">100.</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--zlens&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.27</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--zsource&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.447</span><span class="p">)</span>
+
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--rpmin&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--rpmax&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">30.0</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--nbins&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--DS&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">)</span>
+
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="n">DeltaSigma_from_files</span><span class="p">(</span>
+        <span class="n">args</span><span class="o">.</span><span class="n">header_file</span><span class="p">,</span>
+        <span class="n">args</span><span class="o">.</span><span class="n">input_file</span><span class="p">,</span>
+        <span class="n">args</span><span class="o">.</span><span class="n">output_file</span><span class="p">,</span>
+        <span class="n">pimax</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">pimax</span><span class="p">,</span>
+        <span class="n">z_lens</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">zlens</span><span class="p">,</span>
+        <span class="n">z_source</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">zsource</span><span class="p">,</span>
+        <span class="n">rp_min</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">rpmin</span><span class="p">,</span>
+        <span class="n">rp_max</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">rpmax</span><span class="p">,</span>
+        <span class="n">nbins</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">nbins</span><span class="p">,</span>
+        <span class="n">compute_DS</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">DS</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Ben Wibking
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

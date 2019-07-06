@@ -1,0 +1,224 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>compute_mock module &mdash; ACME Emulator  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> ACME Emulator
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">compute_mock module</a></li>
+</ul>
+</div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ACME Emulator</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>compute_mock module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/compute_mock.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-compute_mock">
+<span id="compute-mock-module"></span><h1>compute_mock module<a class="headerlink" href="#module-compute_mock" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="compute_mock.compute">
+<code class="descclassname">compute_mock.</code><code class="descname">compute</code><span class="sig-paren">(</span><em>halo_file</em>, <em>env_file</em>, <em>header_file</em>, <em>output_file</em>, <em>siglogM=None</em>, <em>logMmin=None</em>, <em>logM0=None</em>, <em>logM1=None</em>, <em>alpha=None</em>, <em>q_env=None</em>, <em>del_gamma=None</em>, <em>f_cen=None</em>, <em>A_conc=None</em>, <em>delta_b=None</em>, <em>delta_c=None</em>, <em>R_rescale=None</em>, <em>is_stochastic=None</em>, <em>seed=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_mock.html#compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_mock.compute" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="compute_mock.compute_HOD_parameters">
+<code class="descclassname">compute_mock.</code><code class="descname">compute_HOD_parameters</code><span class="sig-paren">(</span><em>ngal=None</em>, <em>M1_over_Mmin=None</em>, <em>M0_over_M1=None</em>, <em>alpha=None</em>, <em>siglogM=None</em>, <em>f_cen=None</em>, <em>halos=None</em>, <em>header=None</em>, <em>mass_fun_file=None</em>, <em>logMmin_guess=13.2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_mock.html#compute_HOD_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_mock.compute_HOD_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the physical (er, Msun h^-1) HOD parameters from ratios of masses
+and the desired number density of galaxies.
+We convert the number density of galaxies into Mmin using the halo mass function.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="compute_mock.compute_HOD_parameters_centralsonly">
+<code class="descclassname">compute_mock.</code><code class="descname">compute_HOD_parameters_centralsonly</code><span class="sig-paren">(</span><em>ncen=None</em>, <em>siglogM=None</em>, <em>f_cen=None</em>, <em>halos=None</em>, <em>header=None</em>, <em>mass_fun_file=None</em>, <em>logMmin_guess=13.5</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_mock.html#compute_HOD_parameters_centralsonly"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_mock.compute_HOD_parameters_centralsonly" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="compute_mock.compute_ncen">
+<code class="descclassname">compute_mock.</code><code class="descname">compute_ncen</code><span class="sig-paren">(</span><em>logM</em>, <em>dM</em>, <em>mass_function</em>, <em>logMmin</em>, <em>siglogM</em>, <em>f_cen</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_mock.html#compute_ncen"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_mock.compute_ncen" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="compute_mock.compute_ngal">
+<code class="descclassname">compute_mock.</code><code class="descname">compute_ngal</code><span class="sig-paren">(</span><em>logM</em>, <em>dM</em>, <em>mass_function</em>, <em>logMmin</em>, <em>M1_over_Mmin</em>, <em>M0_over_M1</em>, <em>alpha</em>, <em>siglogM</em>, <em>f_cen</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_mock.html#compute_ngal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_mock.compute_ngal" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="compute_mock.populate_hod">
+<code class="descclassname">compute_mock.</code><code class="descname">populate_hod</code><span class="sig-paren">(</span><em>halo_file</em>, <em>galaxy_file</em>, <em>env_file</em>, <em>omega_m</em>, <em>redshift</em>, <em>boxsize</em>, <em>siglogM</em>, <em>logMmin</em>, <em>logM0</em>, <em>logM1</em>, <em>alpha</em>, <em>q_env</em>, <em>del_gamma</em>, <em>f_cen</em>, <em>A_conc</em>, <em>delta_b</em>, <em>delta_c</em>, <em>R_rescale</em>, <em>is_stochastic</em>, <em>seed</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_mock.html#populate_hod"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_mock.populate_hod" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Ben Wibking
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

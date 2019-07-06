@@ -1,0 +1,212 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>compute_wp module &mdash; ACME Emulator  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> ACME Emulator
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">compute_wp module</a></li>
+</ul>
+</div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ACME Emulator</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>compute_wp module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/compute_wp.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-compute_wp">
+<span id="compute-wp-module"></span><h1>compute_wp module<a class="headerlink" href="#module-compute_wp" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="compute_wp.elementwise_integral_firstorder">
+<code class="descclassname">compute_wp.</code><code class="descname">elementwise_integral_firstorder</code><span class="sig-paren">(</span><em>rp</em>, <em>binmin</em>, <em>binmax</em>, <em>xi</em>, <em>pimax</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_wp.html#elementwise_integral_firstorder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_wp.elementwise_integral_firstorder" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="compute_wp.elementwise_integral_secondorder">
+<code class="descclassname">compute_wp.</code><code class="descname">elementwise_integral_secondorder</code><span class="sig-paren">(</span><em>rp</em>, <em>binmin</em>, <em>binmax</em>, <em>xi</em>, <em>pimax</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_wp.html#elementwise_integral_secondorder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_wp.elementwise_integral_secondorder" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="compute_wp.wp">
+<code class="descclassname">compute_wp.</code><code class="descname">wp</code><span class="sig-paren">(</span><em>binmin</em>, <em>binmax</em>, <em>xi</em>, <em>Omega_m</em>, <em>z_lens</em>, <em>pimax=100.0</em>, <em>Omega_m_fid=0.3</em>, <em>rp_min=0.5</em>, <em>rp_max=30.0</em>, <em>nbins=30</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_wp.html#wp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_wp.wp" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute w_p(r_p) from tabulated xi(r).</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="compute_wp.wp_from_files">
+<code class="descclassname">compute_wp.</code><code class="descname">wp_from_files</code><span class="sig-paren">(</span><em>header_file</em>, <em>filename</em>, <em>output_file</em>, <em>pimax</em>, <em>z_lens</em>, <em>rp_min</em>, <em>rp_max</em>, <em>nbins</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_wp.html#wp_from_files"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_wp.wp_from_files" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Ben Wibking
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

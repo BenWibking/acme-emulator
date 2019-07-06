@@ -1,0 +1,394 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>plot_emulator &mdash; ACME Emulator  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> ACME Emulator
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ACME Emulator</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">Module code</a> &raquo;</li>
+        
+      <li>plot_emulator</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for plot_emulator</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+
+<span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">import</span> <span class="nn">configparser</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">h5py</span>
+<span class="kn">import</span> <span class="nn">compute_hod</span>
+
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="k">import</span> <span class="n">Path</span>
+
+
+<div class="viewcode-block" id="tex_escape"><a class="viewcode-back" href="../plot_emulator.html#plot_emulator.tex_escape">[docs]</a><span class="k">def</span> <span class="nf">tex_escape</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		:param text: a plain text message</span>
+<span class="sd">		:return: the message escaped to appear correctly in LaTeX</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+
+	<span class="n">conv</span> <span class="o">=</span> <span class="p">{</span>
+		<span class="s1">&#39;&amp;&#39;</span><span class="p">:</span> <span class="sa">r</span><span class="s1">&#39;\&amp;&#39;</span><span class="p">,</span>
+		<span class="s1">&#39;%&#39;</span><span class="p">:</span> <span class="sa">r</span><span class="s1">&#39;\%&#39;</span><span class="p">,</span>
+		<span class="s1">&#39;$&#39;</span><span class="p">:</span> <span class="sa">r</span><span class="s1">&#39;\$&#39;</span><span class="p">,</span>
+		<span class="s1">&#39;#&#39;</span><span class="p">:</span> <span class="sa">r</span><span class="s1">&#39;\#&#39;</span><span class="p">,</span>
+		<span class="s1">&#39;_&#39;</span><span class="p">:</span> <span class="sa">r</span><span class="s1">&#39;\_&#39;</span><span class="p">,</span>
+		<span class="s1">&#39;{&#39;</span><span class="p">:</span> <span class="sa">r</span><span class="s1">&#39;\{&#39;</span><span class="p">,</span>
+		<span class="s1">&#39;}&#39;</span><span class="p">:</span> <span class="sa">r</span><span class="s1">&#39;\}&#39;</span><span class="p">,</span>
+		<span class="s1">&#39;~&#39;</span><span class="p">:</span> <span class="sa">r</span><span class="s1">&#39;\textasciitilde</span><span class="si">{}</span><span class="s1">&#39;</span><span class="p">,</span>
+		<span class="s1">&#39;^&#39;</span><span class="p">:</span> <span class="sa">r</span><span class="s1">&#39;\^</span><span class="si">{}</span><span class="s1">&#39;</span><span class="p">,</span>
+		<span class="s1">&#39;</span><span class="se">\\</span><span class="s1">&#39;</span><span class="p">:</span> <span class="sa">r</span><span class="s1">&#39;\textbackslash</span><span class="si">{}</span><span class="s1">&#39;</span><span class="p">,</span>
+		<span class="s1">&#39;&lt;&#39;</span><span class="p">:</span> <span class="sa">r</span><span class="s1">&#39;\textless&#39;</span><span class="p">,</span>
+		<span class="s1">&#39;&gt;&#39;</span><span class="p">:</span> <span class="sa">r</span><span class="s1">&#39;\textgreater&#39;</span><span class="p">,</span>
+	<span class="p">}</span>
+	
+	<span class="n">regex</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s1">&#39;|&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">key</span><span class="p">))</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> \
+					   <span class="nb">sorted</span><span class="p">(</span><span class="n">conv</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="n">key</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">item</span><span class="p">:</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">item</span><span class="p">))))</span>
+	
+	<span class="k">return</span> <span class="n">regex</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="k">lambda</span> <span class="n">match</span><span class="p">:</span> <span class="n">conv</span><span class="p">[</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">()],</span> <span class="n">text</span><span class="p">)</span></div>
+		
+		
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+
+	<span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+	
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;input_emu_filename&#39;</span><span class="p">)</span>
+	
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;output_plot_cv_samples&#39;</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;output_plot_cv_covariance&#39;</span><span class="p">)</span>
+
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--output_wp_accuracy&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--output_wp_accuracy_covariance&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+	
+	<span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+	
+	
+	<span class="c1">## read emulator data</span>
+	
+	<span class="n">f</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">input_emu_filename</span><span class="p">)</span>
+
+	<span class="n">gp_kernel_name</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="s1">&#39;gp_kernel_name&#39;</span><span class="p">]</span>
+	<span class="n">sims_dir</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="s1">&#39;simulations_dir&#39;</span><span class="p">]</span>
+	<span class="n">redshift_dir</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="s1">&#39;redshift_dir&#39;</span><span class="p">]</span>
+	<span class="n">obs_filename_ext</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="s1">&#39;filename_extension_inputs&#39;</span><span class="p">]</span>
+	<span class="n">param_files</span> <span class="o">=</span> <span class="p">[</span><span class="n">b</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">f</span><span class="p">[</span><span class="s1">&#39;param_files_inputs&#39;</span><span class="p">]]</span>
+	<span class="n">param_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">b</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">f</span><span class="p">[</span><span class="s1">&#39;param_names_inputs&#39;</span><span class="p">]]</span>
+	
+	<span class="n">binmin</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="s1">&#39;rbins_min&#39;</span><span class="p">][:]</span>
+	<span class="n">binmax</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="s1">&#39;rbins_max&#39;</span><span class="p">][:]</span>
+	<span class="n">binmed</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">binmin</span><span class="o">+</span><span class="n">binmax</span><span class="p">)</span>
+	
+	<span class="n">x</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="s1">&#39;raw_training_inputs&#39;</span><span class="p">]</span>
+	<span class="n">y</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="s1">&#39;raw_training_outputs&#39;</span><span class="p">]</span>
+	<span class="n">yerr</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="s1">&#39;err_raw_training_outputs&#39;</span><span class="p">]</span>
+	
+	<span class="n">X</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="s1">&#39;normalized_training_inputs&#39;</span><span class="p">][:]</span>
+<span class="c1">#	err_vectors = f[&#39;looe_err_vectors&#39;][:]</span>
+	<span class="n">err_vectors</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="s1">&#39;simfold_err_vectors&#39;</span><span class="p">][:]</span>
+	
+	<span class="n">y_mean</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="s1">&#39;mean_training_outputs&#39;</span><span class="p">][:]</span>
+	<span class="n">y_sigma</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="s1">&#39;stdev_training_outputs&#39;</span><span class="p">][:]</span>
+	
+	
+	<span class="c1">## plot cross-validation error as a function of parameters</span>
+
+<span class="c1">#	j_bin_min = 0</span>
+<span class="c1">#	j_bin_max = 10		# average errors for bins 0-9</span>
+<span class="c1">#	this_err_vector = np.mean(y_sigma[j_bin_min:j_bin_max, np.newaxis] * err_vectors[j_bin_min:j_bin_max, :], axis=0)</span>
+<span class="c1">#	</span>
+<span class="c1">#	corner_fig = corner.corner(x,</span>
+<span class="c1">#							labels=[tex_escape(s) for s in param_names],</span>
+<span class="c1">#							plot_contours = True,</span>
+<span class="c1">#							fill_contours = False,</span>
+<span class="c1">#							no_fill_contours = True,</span>
+<span class="c1">#							contour_kwargs = {&#39;colors&#39;: [&#39;black&#39;,&#39;green&#39;,&#39;blue&#39;,&#39;red&#39;]},</span>
+<span class="c1">#							plot_density = False,</span>
+<span class="c1">#							plot_datapoints = False,</span>
+<span class="c1">#							show_titles = True,</span>
+<span class="c1">#							levels = [0.01, 0.05, 0.1, 0.2],</span>
+<span class="c1">#							weights = abs(this_err_vector))</span>
+<span class="c1">#							</span>
+<span class="c1">#	corner_fig.savefig(args.output_plot_corner)</span>
+	
+	
+	<span class="c1">## plot prediction errors for random sub-set</span>
+
+	<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+
+	<span class="n">dimensionful_err_vectors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">err_vectors</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+	<span class="n">frac_err_vectors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">err_vectors</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+	<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">err_vectors</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+<span class="c1">#		dimensionful_err_vectors[:,i] = y_sigma*err_vectors[:,i]	# only for LOOE</span>
+		<span class="n">dimensionful_err_vectors</span><span class="p">[:,</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">err_vectors</span><span class="p">[:,</span><span class="n">i</span><span class="p">]</span>			<span class="c1"># for sim-fold errors</span>
+		<span class="n">frac_err_vectors</span><span class="p">[:,</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">dimensionful_err_vectors</span><span class="p">[:,</span><span class="n">i</span><span class="p">]</span> <span class="o">/</span> <span class="n">y_mean</span>
+
+	<span class="n">nplot</span> <span class="o">=</span> <span class="n">frac_err_vectors</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+	<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nplot</span><span class="p">):</span>
+		<span class="n">this_err_vector</span> <span class="o">=</span> <span class="n">frac_err_vectors</span><span class="p">[:,</span><span class="n">i</span><span class="p">]</span>
+		<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">binmed</span><span class="p">,</span> <span class="n">this_err_vector</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;grey&#39;</span><span class="p">)</span>
+
+	<span class="n">max_err_vector</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">frac_err_vectors</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+	<span class="n">min_err_vector</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">frac_err_vectors</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+	<span class="n">pct97_err_vector</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">frac_err_vectors</span><span class="p">,</span> <span class="mf">97.0</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+	<span class="n">pct85_err_vector</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">frac_err_vectors</span><span class="p">,</span> <span class="mf">85.0</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+	<span class="n">pct15_err_vector</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">frac_err_vectors</span><span class="p">,</span> <span class="mf">15.0</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+	<span class="n">pct03_err_vector</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">frac_err_vectors</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+	<span class="n">avg_err_vector</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">frac_err_vectors</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+	<span class="n">std_err_vector</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">frac_err_vectors</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+	<span class="n">plt</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span><span class="n">binmed</span><span class="p">,</span> <span class="n">avg_err_vector</span><span class="o">-</span><span class="n">std_err_vector</span><span class="p">,</span> <span class="n">avg_err_vector</span><span class="o">+</span><span class="n">std_err_vector</span><span class="p">,</span>
+					 <span class="n">facecolor</span><span class="o">=</span><span class="s1">&#39;none&#39;</span><span class="p">,</span> <span class="n">hatch</span><span class="o">=</span><span class="s1">&#39;X&#39;</span><span class="p">,</span> <span class="n">edgecolor</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+					 <span class="n">zorder</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;mean/std. dev.&#39;</span><span class="p">)</span>
+					 
+
+	<span class="c1">## plot LOWZ error bars</span>
+
+<span class="c1">#	cov = np.loadtxt(&#39;../../lowz_mocks/Ben_gg_covariance_z0p3.txt&#39;)	# wp covariance</span>
+<span class="c1">#	subvolume = (1100.)**3 / 25.0</span>
+<span class="c1">#	vol_survey = (913.26)**3</span>
+<span class="c1">#	cov *= (20*25) * (subvolume / vol_survey)</span>
+<span class="c1">#	wpmin, wpmax, _, wp_fiducial = np.loadtxt(&#39;./Params/LOWZ_phases_03/NHOD_lowz_fiducial.00.0.seed_42.template_param.average_wp.txt&#39;, unpack=True)</span>
+<span class="c1">#	cov_err = np.sqrt( np.diag(cov) ) / wp_fiducial</span>
+
+	<span class="n">cov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="s1">&#39;./Params/LOWZ_emulator_03/lowz_cov_deltasigma_new.txt&#39;</span><span class="p">)</span>
+	<span class="n">dsmin</span><span class="p">,</span> <span class="n">dsmax</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">ds_fiducial</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="s1">&#39;./Params/LOWZ_phases_03/NHOD_lowz_fiducial.00.0.seed_42.template_param.average_DeltaSigma.txt&#39;</span><span class="p">,</span> <span class="n">unpack</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+	<span class="n">cov_err</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">cov</span><span class="p">)</span> <span class="p">)</span> <span class="o">/</span> <span class="n">ds_fiducial</span>
+
+	<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">binmed</span><span class="p">)):</span>
+		<span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;</span><span class="si">{i}</span><span class="s2"> </span><span class="si">{binmin[i]}</span><span class="s2"> </span><span class="si">{binmax[i]}</span><span class="s2"> {std_err_vector[i]/cov_err[i]}&quot;</span><span class="p">)</span>
+
+	<span class="n">plt</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span><span class="n">binmed</span><span class="p">,</span> <span class="o">-</span><span class="n">cov_err</span><span class="p">,</span> <span class="n">cov_err</span><span class="p">,</span>
+					 <span class="n">color</span><span class="o">=</span><span class="s1">&#39;orange&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;LOWZ error bars&#39;</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+
+
+	<span class="c1">## plot emulator errors</span>
+
+	<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">binmed</span><span class="p">,</span> <span class="n">avg_err_vector</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">21</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">binmed</span><span class="p">,</span> <span class="n">min_err_vector</span><span class="p">,</span> <span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">21</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;min/max error&#39;</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">binmed</span><span class="p">,</span> <span class="n">max_err_vector</span><span class="p">,</span> <span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">21</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">binmed</span><span class="p">,</span> <span class="n">pct15_err_vector</span><span class="p">,</span> <span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">21</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;15th/85th percentile&#39;</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">binmed</span><span class="p">,</span> <span class="n">pct85_err_vector</span><span class="p">,</span> <span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">21</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">binmed</span><span class="p">,</span> <span class="n">pct03_err_vector</span><span class="p">,</span> <span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;blue&#39;</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">21</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;3rd/97th percentile&#39;</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">binmed</span><span class="p">,</span> <span class="n">pct97_err_vector</span><span class="p">,</span> <span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;blue&#39;</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">21</span><span class="p">)</span>
+
+	<span class="n">plt</span><span class="o">.</span><span class="n">xscale</span><span class="p">(</span><span class="s1">&#39;log&#39;</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;leave-one-simulation-out fractional error&#39;</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$r_p$ [$h^{-1}$ Mpc]&#39;</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s1">&#39;best&#39;</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">((</span><span class="n">binmin</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">binmax</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+<span class="c1">#	plt.ylim(-0.15, 0.15)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">output_plot_cv_samples</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+	
+	
+	<span class="c1">## plot correlation matrix of prediction errors</span>
+	
+	<span class="n">cov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cov</span><span class="p">(</span><span class="n">dimensionful_err_vectors</span><span class="p">)</span>
+	<span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;covariance matrix: </span><span class="si">{cov.shape[0]}</span><span class="s1"> x </span><span class="si">{cov.shape[1]}</span><span class="s1">&#39;</span><span class="p">)</span>
+	<span class="n">corr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">cov</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+	
+	<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">corr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+		<span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">corr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+			<span class="n">corr</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">cov</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">cov</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">cov</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">j</span><span class="p">])</span>
+	
+	<span class="kn">from</span> <span class="nn">mpl_toolkits.axes_grid1</span> <span class="k">import</span> <span class="n">make_axes_locatable</span><span class="p">,</span> <span class="n">axes_size</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+	<span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span>
+
+	<span class="n">im</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">swapaxes</span><span class="p">(</span><span class="n">corr</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">vmin</span><span class="o">=-</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;Spectral&#39;</span><span class="p">,</span> <span class="n">aspect</span><span class="o">=</span><span class="s1">&#39;equal&#39;</span><span class="p">,</span>
+					<span class="n">extent</span><span class="o">=</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">binmin</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">binmax</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span>
+							<span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">binmin</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">binmax</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])])</span>
+
+	<span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">))</span>
+	<span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">))</span>
+
+	<span class="n">divider</span> <span class="o">=</span> <span class="n">make_axes_locatable</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+	<span class="n">width</span> <span class="o">=</span> <span class="n">axes_size</span><span class="o">.</span><span class="n">AxesY</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">aspect</span><span class="o">=</span><span class="mi">1</span><span class="o">/</span><span class="mi">20</span><span class="p">)</span>
+	<span class="n">pad</span> <span class="o">=</span> <span class="n">axes_size</span><span class="o">.</span><span class="n">Fraction</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">width</span><span class="p">)</span>
+	<span class="n">cax</span> <span class="o">=</span> <span class="n">divider</span><span class="o">.</span><span class="n">append_axes</span><span class="p">(</span><span class="s1">&#39;right&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">width</span><span class="p">,</span> <span class="n">pad</span><span class="o">=</span><span class="n">pad</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">cax</span><span class="o">=</span><span class="n">cax</span><span class="p">,</span> <span class="n">ticks</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+
+	<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$\log_</span><span class="si">{10}</span><span class="s1"> r$ [$h^{-1}$ Mpc]&#39;</span><span class="p">)</span>
+	<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$\log_</span><span class="si">{10}</span><span class="s1"> r$ [$h^{-1}$ Mpc]&#39;</span><span class="p">)</span>
+
+	<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">output_plot_cv_covariance</span><span class="p">)</span>
+
+
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Ben Wibking
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
