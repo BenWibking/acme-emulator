@@ -155,74 +155,93 @@ returning an object with a map method).</p>
 <p>The multiprocessing Pool in python2 does not have an __enter__
 and __exit__ method, this function provides a backport of the python3 Pool
 context manager.</p>
-<dl class="docutils">
-<dt>Pool <span class="classifier-delimiter">:</span> <span class="classifier">executor-like object</span></dt>
-<dd>An object with context manager (__enter__, __exit__) and map method.</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>Pool</strong> – An object with context manager (__enter__, __exit__) and map method.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">executor-like object</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="function">
 <dt id="blackbox.rbf">
 <code class="descclassname">blackbox.</code><code class="descname">rbf</code><span class="sig-paren">(</span><em>points</em>, <em>T</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/blackbox.html#rbf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#blackbox.rbf" title="Permalink to this definition">¶</a></dt>
 <dd><p>Build RBF-fit for given points (see Holmstrom, 2008 for details) using scaling matrix.</p>
-<dl class="docutils">
-<dt>points <span class="classifier-delimiter">:</span> <span class="classifier">ndarray</span></dt>
-<dd>Array of multi-d points with corresponding values [[x1, x2, .., xd, val], …].</dd>
-<dt>T <span class="classifier-delimiter">:</span> <span class="classifier">ndarray</span></dt>
-<dd>Scaling matrix.</dd>
-</dl>
-<dl class="docutils">
-<dt>fit <span class="classifier-delimiter">:</span> <span class="classifier">callable</span></dt>
-<dd>Function that returns the value of the RBF-fit at a given point.</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>points</strong> (<em>ndarray</em>) – Array of multi-d points with corresponding values [[x1, x2, .., xd, val], …].</li>
+<li><strong>T</strong> (<em>ndarray</em>) – Scaling matrix.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>fit</strong> – Function that returns the value of the RBF-fit at a given point.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">callable</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="function">
 <dt id="blackbox.rseq">
 <code class="descclassname">blackbox.</code><code class="descname">rseq</code><span class="sig-paren">(</span><em>n</em>, <em>d</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/blackbox.html#rseq"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#blackbox.rseq" title="Permalink to this definition">¶</a></dt>
 <dd><p>Build R-sequence (<a class="reference external" href="http://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/">http://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/</a>).</p>
-<dl class="docutils">
-<dt>n <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
-<dd>Number of points.</dd>
-<dt>d <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
-<dd>Size of space.</dd>
-</dl>
-<dl class="docutils">
-<dt>points <span class="classifier-delimiter">:</span> <span class="classifier">ndarray</span></dt>
-<dd>Array of points uniformly placed in d-dimensional unit cube.</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>n</strong> (<em>int</em>) – Number of points.</li>
+<li><strong>d</strong> (<em>int</em>) – Size of space.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>points</strong> – Array of points uniformly placed in d-dimensional unit cube.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">ndarray</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="function">
 <dt id="blackbox.search">
 <code class="descclassname">blackbox.</code><code class="descname">search</code><span class="sig-paren">(</span><em>f</em>, <em>box</em>, <em>n</em>, <em>m</em>, <em>batch</em>, <em>resfile</em>, <em>rho0=0.5</em>, <em>p=1.0</em>, <em>nrand=10000</em>, <em>nrand_frac=0.05</em>, <em>executor=&lt;bound method BaseContext.Pool of &lt;multiprocessing.context.DefaultContext object&gt;&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/blackbox.html#search"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#blackbox.search" title="Permalink to this definition">¶</a></dt>
 <dd><p>Minimize given expensive black-box function and save results into text file.</p>
-<dl class="docutils">
-<dt>f <span class="classifier-delimiter">:</span> <span class="classifier">callable</span></dt>
-<dd>The objective function to be minimized.</dd>
-<dt>box <span class="classifier-delimiter">:</span> <span class="classifier">list of lists</span></dt>
-<dd>List of ranges for each parameter.</dd>
-<dt>n <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
-<dd>Number of initial function calls.</dd>
-<dt>m <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
-<dd>Number of subsequent function calls.</dd>
-<dt>batch <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
-<dd>Number of function calls evaluated simultaneously (in parallel).</dd>
-<dt>resfile <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
-<dd>Text file to save results.</dd>
-<dt>rho0 <span class="classifier-delimiter">:</span> <span class="classifier">float, optional</span></dt>
-<dd>Initial “balls density”.</dd>
-<dt>p <span class="classifier-delimiter">:</span> <span class="classifier">float, optional</span></dt>
-<dd>Rate of “balls density” decay (p=1 - linear, p&gt;1 - faster, 0&lt;p&lt;1 - slower).</dd>
-<dt>nrand <span class="classifier-delimiter">:</span> <span class="classifier">int, optional</span></dt>
-<dd>Number of random samples that is generated for space rescaling.</dd>
-<dt>nrand_frac <span class="classifier-delimiter">:</span> <span class="classifier">float, optional</span></dt>
-<dd>Fraction of nrand that is actually used for space rescaling.</dd>
-<dt>executor <span class="classifier-delimiter">:</span> <span class="classifier">callable, optional</span></dt>
-<dd>Should have a map method and behave as a context manager.
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>f</strong> (<em>callable</em>) – The objective function to be minimized.</li>
+<li><strong>box</strong> (<em>list of lists</em>) – List of ranges for each parameter.</li>
+<li><strong>n</strong> (<em>int</em>) – Number of initial function calls.</li>
+<li><strong>m</strong> (<em>int</em>) – Number of subsequent function calls.</li>
+<li><strong>batch</strong> (<em>int</em>) – Number of function calls evaluated simultaneously (in parallel).</li>
+<li><strong>resfile</strong> (<em>str</em>) – Text file to save results.</li>
+<li><strong>rho0</strong> (<em>float</em><em>, </em><em>optional</em>) – Initial “balls density”.</li>
+<li><strong>p</strong> (<em>float</em><em>, </em><em>optional</em>) – Rate of “balls density” decay (p=1 - linear, p&gt;1 - faster, 0&lt;p&lt;1 - slower).</li>
+<li><strong>nrand</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of random samples that is generated for space rescaling.</li>
+<li><strong>nrand_frac</strong> (<em>float</em><em>, </em><em>optional</em>) – Fraction of nrand that is actually used for space rescaling.</li>
+<li><strong>executor</strong> (<em>callable</em><em>, </em><em>optional</em>) – Should have a map method and behave as a context manager.
 Allows the user to use various parallelisation tools
-as dask.distributed or pathos.</dd>
-</dl>
+as dask.distributed or pathos.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 </div>

@@ -147,7 +147,7 @@
   <div class="section" id="module-compute_linear_matter_correlation">
 <span id="compute-linear-matter-correlation-module"></span><h1>compute_linear_matter_correlation module<a class="headerlink" href="#module-compute_linear_matter_correlation" title="Permalink to this headline">¶</a></h1>
 <p>python version of python FFTLOG.
-Algorithm due to Andrew Hamilton. 
+Algorithm due to Andrew Hamilton.
 See <a class="reference external" href="http://casa.colorado.edu/~ajsh/FFTLog/">http://casa.colorado.edu/~ajsh/FFTLog/</a></p>
 <blockquote>
 <div>Joseph E. McEwen
@@ -172,11 +172,11 @@ as part of this galaxy emulator pipline due to Ben Wibking.
 <dd><p>module to calculate Hankel Transform
 int_0^infty dk r A(k) J_mu(kr), via fftlog algorithm
 Common application is for power spectrum:
-xi(r)= int dk k^2 /(2 pi^2) sin(kr)/kr P(k) 
-in which case 
+xi(r)= int dk k^2 /(2 pi^2) sin(kr)/kr P(k)
+in which case
 alpha_k=1.5
 beta_r=-1.5
-mu=.5 
+mu=.5
 pf=(2*np.pi)**(-1.5)</p>
 </dd></dl>
 
@@ -191,11 +191,11 @@ pf=(2*np.pi)**(-1.5)</p>
 <dd><p>module to calculate Hankel Transform
 int_0^infty dr k A(r) J_mu(kr), via fftlog algorithm
 Common application is for correlation function:
-P(k)= 2 pi int dr r^2  sin(kr)/kr xi(r) 
-in which case 
+P(k)= 2 pi int dr r^2  sin(kr)/kr xi(r)
+in which case
 alpha_k=-1.5
 beta_r=1.5
-mu=.5 
+mu=.5
 pf=4 pi <a href="#id1"><span class="problematic" id="id2">*</span></a>sqrt(pi/2)</p>
 </dd></dl>
 
