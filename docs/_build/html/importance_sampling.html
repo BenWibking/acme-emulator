@@ -24,6 +24,7 @@
         <script type="text/javascript" src="_static/jquery.js"></script>
         <script type="text/javascript" src="_static/underscore.js"></script>
         <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
     
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
@@ -148,7 +149,7 @@
 <span id="importance-sampling-module"></span><h1>importance_sampling module<a class="headerlink" href="#module-importance_sampling" title="Permalink to this headline">¶</a></h1>
 <dl class="function">
 <dt id="importance_sampling.do_importance_sampling">
-<code class="descclassname">importance_sampling.</code><code class="descname">do_importance_sampling</code><span class="sig-paren">(</span><em>new_cinv</em>, <em>new_datavector</em>, <em>modelvectors</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/importance_sampling.html#do_importance_sampling"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#importance_sampling.do_importance_sampling" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">importance_sampling.</code><code class="sig-name descname">do_importance_sampling</code><span class="sig-paren">(</span><em class="sig-param">new_cinv</em>, <em class="sig-param">new_datavector</em>, <em class="sig-param">modelvectors</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/importance_sampling.html#do_importance_sampling"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#importance_sampling.do_importance_sampling" title="Permalink to this definition">¶</a></dt>
 <dd><p>do importance sampling on ‘samples’ with Gaussian likelihood with covariance ‘new_cov’.
 We also want to re-use the model predictions for all of the samples,
 since we’re only interested in modifying the covariance used in our likelihood

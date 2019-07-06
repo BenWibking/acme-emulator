@@ -24,6 +24,7 @@
         <script type="text/javascript" src="_static/jquery.js"></script>
         <script type="text/javascript" src="_static/underscore.js"></script>
         <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
     
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
@@ -150,25 +151,26 @@
 Algorithm due to Andrew Hamilton.
 See <a class="reference external" href="http://casa.colorado.edu/~ajsh/FFTLog/">http://casa.colorado.edu/~ajsh/FFTLog/</a></p>
 <blockquote>
-<div>Joseph E. McEwen
-email: <a class="reference external" href="mailto:jmcewen314&#37;&#52;&#48;gmail&#46;com">jmcewen314<span>&#64;</span>gmail<span>&#46;</span>com</a></div></blockquote>
+<div><p>Joseph E. McEwen
+email: <a class="reference external" href="mailto:jmcewen314&#37;&#52;&#48;gmail&#46;com">jmcewen314<span>&#64;</span>gmail<span>&#46;</span>com</a></p>
+</div></blockquote>
 <p>Minor modifications of input/output formats and interpolation
 as part of this galaxy emulator pipline due to Ben Wibking.
 (June 2016) (<a class="reference external" href="mailto:ben&#37;&#52;&#48;wibking&#46;com">ben<span>&#64;</span>wibking<span>&#46;</span>com</a>).</p>
 <dl class="function">
 <dt id="compute_linear_matter_correlation.fft_log">
-<code class="descclassname">compute_linear_matter_correlation.</code><code class="descname">fft_log</code><span class="sig-paren">(</span><em>k</em>, <em>f_k</em>, <em>q</em>, <em>mu</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_linear_matter_correlation.html#fft_log"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_linear_matter_correlation.fft_log" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">compute_linear_matter_correlation.</code><code class="sig-name descname">fft_log</code><span class="sig-paren">(</span><em class="sig-param">k</em>, <em class="sig-param">f_k</em>, <em class="sig-param">q</em>, <em class="sig-param">mu</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_linear_matter_correlation.html#fft_log"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_linear_matter_correlation.fft_log" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute the discrete Fourier transform of a log-spaced input signal.</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="compute_linear_matter_correlation.get_k0">
-<code class="descclassname">compute_linear_matter_correlation.</code><code class="descname">get_k0</code><span class="sig-paren">(</span><em>N</em>, <em>mu</em>, <em>q</em>, <em>r0</em>, <em>L</em>, <em>k0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_linear_matter_correlation.html#get_k0"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_linear_matter_correlation.get_k0" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">compute_linear_matter_correlation.</code><code class="sig-name descname">get_k0</code><span class="sig-paren">(</span><em class="sig-param">N</em>, <em class="sig-param">mu</em>, <em class="sig-param">q</em>, <em class="sig-param">r0</em>, <em class="sig-param">L</em>, <em class="sig-param">k0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_linear_matter_correlation.html#get_k0"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_linear_matter_correlation.get_k0" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="function">
 <dt id="compute_linear_matter_correlation.k_to_r">
-<code class="descclassname">compute_linear_matter_correlation.</code><code class="descname">k_to_r</code><span class="sig-paren">(</span><em>k</em>, <em>f_k</em>, <em>alpha_k=1.5</em>, <em>beta_r=-1.5</em>, <em>mu=0.5</em>, <em>pf=0.06349363593424097</em>, <em>q=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_linear_matter_correlation.html#k_to_r"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_linear_matter_correlation.k_to_r" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">compute_linear_matter_correlation.</code><code class="sig-name descname">k_to_r</code><span class="sig-paren">(</span><em class="sig-param">k</em>, <em class="sig-param">f_k</em>, <em class="sig-param">alpha_k=1.5</em>, <em class="sig-param">beta_r=-1.5</em>, <em class="sig-param">mu=0.5</em>, <em class="sig-param">pf=0.06349363593424097</em>, <em class="sig-param">q=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_linear_matter_correlation.html#k_to_r"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_linear_matter_correlation.k_to_r" title="Permalink to this definition">¶</a></dt>
 <dd><p>module to calculate Hankel Transform
 int_0^infty dk r A(k) J_mu(kr), via fftlog algorithm
 Common application is for power spectrum:
@@ -182,12 +184,12 @@ pf=(2*np.pi)**(-1.5)</p>
 
 <dl class="function">
 <dt id="compute_linear_matter_correlation.log_gamma">
-<code class="descclassname">compute_linear_matter_correlation.</code><code class="descname">log_gamma</code><span class="sig-paren">(</span><em>z</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_linear_matter_correlation.html#log_gamma"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_linear_matter_correlation.log_gamma" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">compute_linear_matter_correlation.</code><code class="sig-name descname">log_gamma</code><span class="sig-paren">(</span><em class="sig-param">z</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_linear_matter_correlation.html#log_gamma"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_linear_matter_correlation.log_gamma" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="function">
 <dt id="compute_linear_matter_correlation.r_to_k">
-<code class="descclassname">compute_linear_matter_correlation.</code><code class="descname">r_to_k</code><span class="sig-paren">(</span><em>r</em>, <em>f_r</em>, <em>alpha_k=-1.5</em>, <em>beta_r=1.5</em>, <em>mu=0.5</em>, <em>pf=15.749609945722417</em>, <em>q=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_linear_matter_correlation.html#r_to_k"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_linear_matter_correlation.r_to_k" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">compute_linear_matter_correlation.</code><code class="sig-name descname">r_to_k</code><span class="sig-paren">(</span><em class="sig-param">r</em>, <em class="sig-param">f_r</em>, <em class="sig-param">alpha_k=-1.5</em>, <em class="sig-param">beta_r=1.5</em>, <em class="sig-param">mu=0.5</em>, <em class="sig-param">pf=15.749609945722417</em>, <em class="sig-param">q=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_linear_matter_correlation.html#r_to_k"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_linear_matter_correlation.r_to_k" title="Permalink to this definition">¶</a></dt>
 <dd><p>module to calculate Hankel Transform
 int_0^infty dr k A(r) J_mu(kr), via fftlog algorithm
 Common application is for correlation function:
@@ -201,7 +203,7 @@ pf=4 pi <a href="#id1"><span class="problematic" id="id2">*</span></a>sqrt(pi/2)
 
 <dl class="function">
 <dt id="compute_linear_matter_correlation.u_m_vals">
-<code class="descclassname">compute_linear_matter_correlation.</code><code class="descname">u_m_vals</code><span class="sig-paren">(</span><em>m</em>, <em>mu</em>, <em>q</em>, <em>kr</em>, <em>L</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_linear_matter_correlation.html#u_m_vals"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_linear_matter_correlation.u_m_vals" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">compute_linear_matter_correlation.</code><code class="sig-name descname">u_m_vals</code><span class="sig-paren">(</span><em class="sig-param">m</em>, <em class="sig-param">mu</em>, <em class="sig-param">q</em>, <em class="sig-param">kr</em>, <em class="sig-param">L</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_linear_matter_correlation.html#u_m_vals"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_linear_matter_correlation.u_m_vals" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </div>

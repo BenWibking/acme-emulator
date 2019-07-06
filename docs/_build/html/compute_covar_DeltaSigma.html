@@ -24,6 +24,7 @@
         <script type="text/javascript" src="_static/jquery.js"></script>
         <script type="text/javascript" src="_static/underscore.js"></script>
         <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
     
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
@@ -148,37 +149,37 @@
 <span id="compute-covar-deltasigma-module"></span><h1>compute_covar_DeltaSigma module<a class="headerlink" href="#module-compute_covar_DeltaSigma" title="Permalink to this headline">¶</a></h1>
 <dl class="function">
 <dt id="compute_covar_DeltaSigma.cleaned_precision_matrix">
-<code class="descclassname">compute_covar_DeltaSigma.</code><code class="descname">cleaned_precision_matrix</code><span class="sig-paren">(</span><em>cov</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_DeltaSigma.html#cleaned_precision_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_DeltaSigma.cleaned_precision_matrix" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">compute_covar_DeltaSigma.</code><code class="sig-name descname">cleaned_precision_matrix</code><span class="sig-paren">(</span><em class="sig-param">cov</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_DeltaSigma.html#cleaned_precision_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_DeltaSigma.cleaned_precision_matrix" title="Permalink to this definition">¶</a></dt>
 <dd><p>zero-out noisy modes</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="compute_covar_DeltaSigma.comoving">
-<code class="descclassname">compute_covar_DeltaSigma.</code><code class="descname">comoving</code><span class="sig-paren">(</span><em>redshift</em>, <em>Omega_m=0.3</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_DeltaSigma.html#comoving"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_DeltaSigma.comoving" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">compute_covar_DeltaSigma.</code><code class="sig-name descname">comoving</code><span class="sig-paren">(</span><em class="sig-param">redshift</em>, <em class="sig-param">Omega_m=0.3</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_DeltaSigma.html#comoving"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_DeltaSigma.comoving" title="Permalink to this definition">¶</a></dt>
 <dd><p>compute comoving radial distance to redshift ‘redshift’ in flat LCDM.</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="compute_covar_DeltaSigma.compute_signal_to_noise">
-<code class="descclassname">compute_covar_DeltaSigma.</code><code class="descname">compute_signal_to_noise</code><span class="sig-paren">(</span><em>cov</em>, <em>signal</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_DeltaSigma.html#compute_signal_to_noise"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_DeltaSigma.compute_signal_to_noise" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">compute_covar_DeltaSigma.</code><code class="sig-name descname">compute_signal_to_noise</code><span class="sig-paren">(</span><em class="sig-param">cov</em>, <em class="sig-param">signal</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_DeltaSigma.html#compute_signal_to_noise"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_DeltaSigma.compute_signal_to_noise" title="Permalink to this definition">¶</a></dt>
 <dd><p>compute the signal-to-noise for the fiducial case.</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="compute_covar_DeltaSigma.cov_signal_restrict_scales">
-<code class="descclassname">compute_covar_DeltaSigma.</code><code class="descname">cov_signal_restrict_scales</code><span class="sig-paren">(</span><em>cov</em>, <em>signal</em>, <em>bins</em>, <em>rp_min=0.0</em>, <em>rp_max=inf</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_DeltaSigma.html#cov_signal_restrict_scales"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_DeltaSigma.cov_signal_restrict_scales" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">compute_covar_DeltaSigma.</code><code class="sig-name descname">cov_signal_restrict_scales</code><span class="sig-paren">(</span><em class="sig-param">cov</em>, <em class="sig-param">signal</em>, <em class="sig-param">bins</em>, <em class="sig-param">rp_min=0.0</em>, <em class="sig-param">rp_max=inf</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_DeltaSigma.html#cov_signal_restrict_scales"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_DeltaSigma.cov_signal_restrict_scales" title="Permalink to this definition">¶</a></dt>
 <dd><p>return cov, wp restricted to scales rmin &lt; rp &lt; rmax</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="compute_covar_DeltaSigma.extend_pk_range">
-<code class="descclassname">compute_covar_DeltaSigma.</code><code class="descname">extend_pk_range</code><span class="sig-paren">(</span><em>k</em>, <em>pk</em>, <em>extended_kmax=1000.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_DeltaSigma.html#extend_pk_range"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_DeltaSigma.extend_pk_range" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">compute_covar_DeltaSigma.</code><code class="sig-name descname">extend_pk_range</code><span class="sig-paren">(</span><em class="sig-param">k</em>, <em class="sig-param">pk</em>, <em class="sig-param">extended_kmax=1000.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_DeltaSigma.html#extend_pk_range"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_DeltaSigma.extend_pk_range" title="Permalink to this definition">¶</a></dt>
 <dd><p>extend tabulated input power spectrum pk(k) to k_max using k^-3 asymptotic expansion</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="compute_covar_DeltaSigma.lensing_covariance">
-<code class="descclassname">compute_covar_DeltaSigma.</code><code class="descname">lensing_covariance</code><span class="sig-paren">(</span><em>k</em>, <em>Pk_gm</em>, <em>Pk_gg</em>, <em>Pk_mm</em>, <em>bins</em>, <em>n_gal=0.001</em>, <em>Omega_M=0.3</em>, <em>H_0=100.0</em>, <em>L_W=500.0</em>, <em>DeltaPi=400.0</em>, <em>critical_density=4700.0</em>, <em>n_source=8.0</em>, <em>shape_noise=0.21</em>, <em>R=1275.0</em>, <em>gamma_t=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_DeltaSigma.html#lensing_covariance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_DeltaSigma.lensing_covariance" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">compute_covar_DeltaSigma.</code><code class="sig-name descname">lensing_covariance</code><span class="sig-paren">(</span><em class="sig-param">k</em>, <em class="sig-param">Pk_gm</em>, <em class="sig-param">Pk_gg</em>, <em class="sig-param">Pk_mm</em>, <em class="sig-param">bins</em>, <em class="sig-param">n_gal=0.001</em>, <em class="sig-param">Omega_M=0.3</em>, <em class="sig-param">H_0=100.0</em>, <em class="sig-param">L_W=500.0</em>, <em class="sig-param">DeltaPi=400.0</em>, <em class="sig-param">critical_density=4700.0</em>, <em class="sig-param">n_source=8.0</em>, <em class="sig-param">shape_noise=0.21</em>, <em class="sig-param">R=1275.0</em>, <em class="sig-param">gamma_t=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_DeltaSigma.html#lensing_covariance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_DeltaSigma.lensing_covariance" title="Permalink to this definition">¶</a></dt>
 <dd><p>compute the integral of Bessel functions
 over the galaxy power spectrum AND the matter power spectrum:
 int (dk k / 2pi) J_2(k r_p,i) J_2(k r_p,j) (P_gal(k) + 1/_ngal)(P_shear(k) + const.)</p>
@@ -186,7 +187,7 @@ int (dk k / 2pi) J_2(k r_p,i) J_2(k r_p,j) (P_gal(k) + 1/_ngal)(P_shear(k) + con
 
 <dl class="function">
 <dt id="compute_covar_DeltaSigma.lensing_signal">
-<code class="descclassname">compute_covar_DeltaSigma.</code><code class="descname">lensing_signal</code><span class="sig-paren">(</span><em>k</em>, <em>pk_gm</em>, <em>bins</em>, <em>critical_density</em>, <em>Omega_M=0.3</em>, <em>H_0=100.0</em>, <em>gamma_t=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_DeltaSigma.html#lensing_signal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_DeltaSigma.lensing_signal" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">compute_covar_DeltaSigma.</code><code class="sig-name descname">lensing_signal</code><span class="sig-paren">(</span><em class="sig-param">k</em>, <em class="sig-param">pk_gm</em>, <em class="sig-param">bins</em>, <em class="sig-param">critical_density</em>, <em class="sig-param">Omega_M=0.3</em>, <em class="sig-param">H_0=100.0</em>, <em class="sig-param">gamma_t=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_DeltaSigma.html#lensing_signal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_DeltaSigma.lensing_signal" title="Permalink to this definition">¶</a></dt>
 <dd><p>compute the integral of bessel functions
 over the galaxy power spectrum AND the matter power spectrum
 to obtain the tangential excess shear signal.</p>
@@ -194,46 +195,46 @@ to obtain the tangential excess shear signal.</p>
 
 <dl class="function">
 <dt id="compute_covar_DeltaSigma.main">
-<code class="descclassname">compute_covar_DeltaSigma.</code><code class="descname">main</code><span class="sig-paren">(</span><em>parameter_file</em>, <em>pk_gg_filename</em>, <em>pk_gm_filename</em>, <em>pk_mm_filename</em>, <em>output_lensing_filename</em>, <em>output_lensing_precision</em>, <em>output_lensing_signal</em>, <em>output_lensing_nointrinsic_filename</em>, <em>gamma_t=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_DeltaSigma.html#main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_DeltaSigma.main" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">compute_covar_DeltaSigma.</code><code class="sig-name descname">main</code><span class="sig-paren">(</span><em class="sig-param">parameter_file</em>, <em class="sig-param">pk_gg_filename</em>, <em class="sig-param">pk_gm_filename</em>, <em class="sig-param">pk_mm_filename</em>, <em class="sig-param">output_lensing_filename</em>, <em class="sig-param">output_lensing_precision</em>, <em class="sig-param">output_lensing_signal</em>, <em class="sig-param">output_lensing_nointrinsic_filename</em>, <em class="sig-param">gamma_t=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_DeltaSigma.html#main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_DeltaSigma.main" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="function">
 <dt id="compute_covar_DeltaSigma.measurement_bins">
-<code class="descclassname">compute_covar_DeltaSigma.</code><code class="descname">measurement_bins</code><span class="sig-paren">(</span><em>rmin=0.5</em>, <em>rmax=30.0</em>, <em>nbins=30</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_DeltaSigma.html#measurement_bins"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_DeltaSigma.measurement_bins" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">compute_covar_DeltaSigma.</code><code class="sig-name descname">measurement_bins</code><span class="sig-paren">(</span><em class="sig-param">rmin=0.5</em>, <em class="sig-param">rmax=30.0</em>, <em class="sig-param">nbins=30</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_DeltaSigma.html#measurement_bins"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_DeltaSigma.measurement_bins" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="function">
 <dt id="compute_covar_DeltaSigma.my_sinc">
-<code class="descclassname">compute_covar_DeltaSigma.</code><code class="descname">my_sinc</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_DeltaSigma.html#my_sinc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_DeltaSigma.my_sinc" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">compute_covar_DeltaSigma.</code><code class="sig-name descname">my_sinc</code><span class="sig-paren">(</span><em class="sig-param">x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_DeltaSigma.html#my_sinc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_DeltaSigma.my_sinc" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="function">
 <dt id="compute_covar_DeltaSigma.pi_lens">
-<code class="descclassname">compute_covar_DeltaSigma.</code><code class="descname">pi_lens</code><span class="sig-paren">(</span><em>z_lens</em>, <em>z_source</em>, <em>Omega_m=0.3</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_DeltaSigma.html#pi_lens"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_DeltaSigma.pi_lens" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">compute_covar_DeltaSigma.</code><code class="sig-name descname">pi_lens</code><span class="sig-paren">(</span><em class="sig-param">z_lens</em>, <em class="sig-param">z_source</em>, <em class="sig-param">Omega_m=0.3</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_DeltaSigma.html#pi_lens"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_DeltaSigma.pi_lens" title="Permalink to this definition">¶</a></dt>
 <dd><p>compute pi_lens (eq. 18 in my notes) assuming a single source and single lens redshift.</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="compute_covar_DeltaSigma.supersample_and_extend_pk">
-<code class="descclassname">compute_covar_DeltaSigma.</code><code class="descname">supersample_and_extend_pk</code><span class="sig-paren">(</span><em>k</em>, <em>pk</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_DeltaSigma.html#supersample_and_extend_pk"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_DeltaSigma.supersample_and_extend_pk" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">compute_covar_DeltaSigma.</code><code class="sig-name descname">supersample_and_extend_pk</code><span class="sig-paren">(</span><em class="sig-param">k</em>, <em class="sig-param">pk</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_DeltaSigma.html#supersample_and_extend_pk"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_DeltaSigma.supersample_and_extend_pk" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="function">
 <dt id="compute_covar_DeltaSigma.supersample_pk">
-<code class="descclassname">compute_covar_DeltaSigma.</code><code class="descname">supersample_pk</code><span class="sig-paren">(</span><em>k</em>, <em>pk</em>, <em>supersample_factor=10</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_DeltaSigma.html#supersample_pk"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_DeltaSigma.supersample_pk" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">compute_covar_DeltaSigma.</code><code class="sig-name descname">supersample_pk</code><span class="sig-paren">(</span><em class="sig-param">k</em>, <em class="sig-param">pk</em>, <em class="sig-param">supersample_factor=10</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_DeltaSigma.html#supersample_pk"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_DeltaSigma.supersample_pk" title="Permalink to this definition">¶</a></dt>
 <dd><p>supersample pk by cubic spline interpolation</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="compute_covar_DeltaSigma.survey_radius">
-<code class="descclassname">compute_covar_DeltaSigma.</code><code class="descname">survey_radius</code><span class="sig-paren">(</span><em>degrees_sq</em>, <em>redshift</em>, <em>Omega_m=0.3</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_DeltaSigma.html#survey_radius"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_DeltaSigma.survey_radius" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">compute_covar_DeltaSigma.</code><code class="sig-name descname">survey_radius</code><span class="sig-paren">(</span><em class="sig-param">degrees_sq</em>, <em class="sig-param">redshift</em>, <em class="sig-param">Omega_m=0.3</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_DeltaSigma.html#survey_radius"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_DeltaSigma.survey_radius" title="Permalink to this definition">¶</a></dt>
 <dd><p>compute the comoving survey radius assuming a spherical cap survey of
 ‘degrees_sq’ square degrees on the sky at redshift ‘redshift’.</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="compute_covar_DeltaSigma.window">
-<code class="descclassname">compute_covar_DeltaSigma.</code><code class="descname">window</code><span class="sig-paren">(</span><em>k</em>, <em>R=1275.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_DeltaSigma.html#window"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_DeltaSigma.window" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">compute_covar_DeltaSigma.</code><code class="sig-name descname">window</code><span class="sig-paren">(</span><em class="sig-param">k</em>, <em class="sig-param">R=1275.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_DeltaSigma.html#window"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_DeltaSigma.window" title="Permalink to this definition">¶</a></dt>
 <dd><p>this is the window function for a circular survey of projected comoving radius R</p>
 </dd></dl>
 

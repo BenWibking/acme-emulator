@@ -3,8 +3,10 @@
 
 ## Installation
 
-Clone this git repository. Then install all required Python packages with
+Clone this git repository. It is recommended to create a new virtual environment for ACME (Python 3.7+ is *required* for using ACME). Then install all required Python packages:
 ```
+conda create -n acme python=3.7
+conda activate acme
 pip install -r requirements.txt
 ```
 

@@ -24,6 +24,7 @@
         <script type="text/javascript" src="_static/jquery.js"></script>
         <script type="text/javascript" src="_static/underscore.js"></script>
         <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
     
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
@@ -148,19 +149,19 @@
 <span id="compute-covar-xi-module"></span><h1>compute_covar_xi module<a class="headerlink" href="#module-compute_covar_xi" title="Permalink to this headline">¶</a></h1>
 <dl class="function">
 <dt id="compute_covar_xi.bin_avg_spherical_j0">
-<code class="descclassname">compute_covar_xi.</code><code class="descname">bin_avg_spherical_j0</code><span class="sig-paren">(</span><em>k</em>, <em>rminus</em>, <em>rplus</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_xi.html#bin_avg_spherical_j0"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_xi.bin_avg_spherical_j0" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">compute_covar_xi.</code><code class="sig-name descname">bin_avg_spherical_j0</code><span class="sig-paren">(</span><em class="sig-param">k</em>, <em class="sig-param">rminus</em>, <em class="sig-param">rplus</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_xi.html#bin_avg_spherical_j0"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_xi.bin_avg_spherical_j0" title="Permalink to this definition">¶</a></dt>
 <dd><p>compute the bin-averaged spherical Bessel function j0.</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="compute_covar_xi.cleaned_precision_matrix">
-<code class="descclassname">compute_covar_xi.</code><code class="descname">cleaned_precision_matrix</code><span class="sig-paren">(</span><em>cov</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_xi.html#cleaned_precision_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_xi.cleaned_precision_matrix" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">compute_covar_xi.</code><code class="sig-name descname">cleaned_precision_matrix</code><span class="sig-paren">(</span><em class="sig-param">cov</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_xi.html#cleaned_precision_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_xi.cleaned_precision_matrix" title="Permalink to this definition">¶</a></dt>
 <dd><p>zero-out noisy modes</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="compute_covar_xi.clustering_covariance">
-<code class="descclassname">compute_covar_xi.</code><code class="descname">clustering_covariance</code><span class="sig-paren">(</span><em>k</em>, <em>pk_gg</em>, <em>bins</em>, <em>n_gal=0.001</em>, <em>R=1275.0</em>, <em>L_W=500.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_xi.html#clustering_covariance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_xi.clustering_covariance" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">compute_covar_xi.</code><code class="sig-name descname">clustering_covariance</code><span class="sig-paren">(</span><em class="sig-param">k</em>, <em class="sig-param">pk_gg</em>, <em class="sig-param">bins</em>, <em class="sig-param">n_gal=0.001</em>, <em class="sig-param">R=1275.0</em>, <em class="sig-param">L_W=500.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_xi.html#clustering_covariance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_xi.clustering_covariance" title="Permalink to this definition">¶</a></dt>
 <dd><p>compute the integral of bessel functions
 over the galaxy power spectrum:
 (2.0 / Vol) * int (dk k**2 / 2pi**2) j0(k r_p,i) j0(k r_p,j) (P_gal(k) + 1/n_gal)**2
@@ -170,36 +171,36 @@ See Xu et al. 2013 (eq. 36) MNRAS 431, 2834-2860 (2013)</p>
 
 <dl class="function">
 <dt id="compute_covar_xi.clustering_signal">
-<code class="descclassname">compute_covar_xi.</code><code class="descname">clustering_signal</code><span class="sig-paren">(</span><em>k</em>, <em>pk_gg</em>, <em>bins</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_xi.html#clustering_signal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_xi.clustering_signal" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">compute_covar_xi.</code><code class="sig-name descname">clustering_signal</code><span class="sig-paren">(</span><em class="sig-param">k</em>, <em class="sig-param">pk_gg</em>, <em class="sig-param">bins</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_xi.html#clustering_signal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_xi.clustering_signal" title="Permalink to this definition">¶</a></dt>
 <dd><p>compute the integral of bessel function
 over the galaxy power spectrum to obtain the 3d real-space correlation function.</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="compute_covar_xi.compute_signal_to_noise">
-<code class="descclassname">compute_covar_xi.</code><code class="descname">compute_signal_to_noise</code><span class="sig-paren">(</span><em>cov</em>, <em>signal</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_xi.html#compute_signal_to_noise"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_xi.compute_signal_to_noise" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">compute_covar_xi.</code><code class="sig-name descname">compute_signal_to_noise</code><span class="sig-paren">(</span><em class="sig-param">cov</em>, <em class="sig-param">signal</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_xi.html#compute_signal_to_noise"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_xi.compute_signal_to_noise" title="Permalink to this definition">¶</a></dt>
 <dd><p>compute the signal-to-noise for the fiducial case.</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="compute_covar_xi.fractional_covariance">
-<code class="descclassname">compute_covar_xi.</code><code class="descname">fractional_covariance</code><span class="sig-paren">(</span><em>binmin</em>, <em>binmax</em>, <em>xi_input</em>, <em>fractional_err</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_xi.html#fractional_covariance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_xi.fractional_covariance" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">compute_covar_xi.</code><code class="sig-name descname">fractional_covariance</code><span class="sig-paren">(</span><em class="sig-param">binmin</em>, <em class="sig-param">binmax</em>, <em class="sig-param">xi_input</em>, <em class="sig-param">fractional_err</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_xi.html#fractional_covariance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_xi.fractional_covariance" title="Permalink to this definition">¶</a></dt>
 <dd><p>compute the covariance matrix for xi, assuming constant fractional sigma_ii.</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="compute_covar_xi.j1">
-<code class="descclassname">compute_covar_xi.</code><code class="descname">j1</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_xi.html#j1"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_xi.j1" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">compute_covar_xi.</code><code class="sig-name descname">j1</code><span class="sig-paren">(</span><em class="sig-param">x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_xi.html#j1"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_xi.j1" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="function">
 <dt id="compute_covar_xi.main">
-<code class="descclassname">compute_covar_xi.</code><code class="descname">main</code><span class="sig-paren">(</span><em>parameter_file</em>, <em>pk_gg_filename</em>, <em>output_clustering_filename</em>, <em>binfile</em>, <em>fractional_error=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_xi.html#main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_xi.main" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">compute_covar_xi.</code><code class="sig-name descname">main</code><span class="sig-paren">(</span><em class="sig-param">parameter_file</em>, <em class="sig-param">pk_gg_filename</em>, <em class="sig-param">output_clustering_filename</em>, <em class="sig-param">binfile</em>, <em class="sig-param">fractional_error=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_xi.html#main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_xi.main" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="function">
 <dt id="compute_covar_xi.measurement_bins">
-<code class="descclassname">compute_covar_xi.</code><code class="descname">measurement_bins</code><span class="sig-paren">(</span><em>rmin=0.5</em>, <em>rmax=30.0</em>, <em>nbins=30</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_xi.html#measurement_bins"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_xi.measurement_bins" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">compute_covar_xi.</code><code class="sig-name descname">measurement_bins</code><span class="sig-paren">(</span><em class="sig-param">rmin=0.5</em>, <em class="sig-param">rmax=30.0</em>, <em class="sig-param">nbins=30</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_covar_xi.html#measurement_bins"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_covar_xi.measurement_bins" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </div>
