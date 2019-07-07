@@ -1,0 +1,36 @@
+[gaussian_priors]
+ds_calibration_prior = 0.06
+
+[params_min]
+ngal = 0.00025
+siglogM = 0.01
+M1_over_Mmin = 7.5
+M0_over_M1 = 0.0
+alpha = 0.5
+A_conc = 0.5
+R_rescale = 0.5
+
+omega_m = 0.26
+sigma_8 = 0.65
+H0 = 61.57
+ns = 0.9300
+omega_b = 0.0394
+w0 = -1.37035
+redshift = 0.300
+
+[params_max]
+ngal = 0.00035
+siglogM = 0.8
+M1_over_Mmin = 20.0
+M0_over_M1 = 0.4
+alpha = 1.5
+A_conc = 3.0
+R_rescale = 2.0
+
+omega_m = 0.35
+sigma_8 = 1.00
+H0 = 74.80
+ns = 0.9898
+omega_b = 0.0602
+w0 = -0.6548324
+redshift = 0.300

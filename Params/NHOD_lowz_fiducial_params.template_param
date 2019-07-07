@@ -1,0 +1,25 @@
+[params]
+
+ngal = 0.0003
+siglogM = 0.4
+M0_over_M1 = 0.1
+M1_over_Mmin = 8.5
+alpha = 1.0
+
+q_env = 0.0
+del_gamma = 0.0 
+f_cen = 1.0
+A_conc = 1.0
+delta_b = 0.0
+delta_c = 0.0
+R_rescale = 1.0
+
+omega_m = 0.314
+sigma_8 = 0.830
+
+H0 = 67.26
+ns = 0.9652
+omega_b = 0.0491
+w0 = -1.0
+
+redshift = 0.300
