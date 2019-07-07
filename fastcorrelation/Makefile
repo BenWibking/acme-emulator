@@ -1,11 +1,10 @@
-CC=gcc -m64
-CFLAGS=-g -Wall -std=c99 -O0
-
+CC=gcc
+CFLAGS=-g -O3 -Wall -march=native -std=c99
 #CC=icc
 #CFLAGS=-g -O3 -Wall -march=native -std=c99
 
-HDF5_C_INCLUDE=
-HDF5_C_LIBS=-lhdf5
+HDF5_C_INCLUDE=-I$(CONDA_PREFIX)/include
+HDF5_C_LIBS=-L$(CONDA_PREFIX)/lib -lhdf5
 
 INCLUDE=`gsl-config --cflags` $(HDF5_C_INCLUDE) $(MPI_CFLAGS)
 LIB=`gsl-config --libs` $(HDF5_C_LIBS)

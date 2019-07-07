@@ -1,9 +1,8 @@
-HDF5_C_INCLUDE=-I$(HOME)/anaconda3/envs/acme/include
-HDF5_C_LIBS=-L$(HOME)/anaconda3/envs/acme/lib -lm -lhdf5 -lhdf5_hl
+HDF5_C_INCLUDE=-I$(CONDA_PREFIX)/include
+HDF5_C_LIBS=-L$(CONDA_PREFIX)/lib -lm -lhdf5 -lhdf5_hl
 
 CC=gcc
-CFLAGS=-Wall -O3 -std=c99
-
+CFLAGS=-Wall -O3 -march=native -std=c99
 #CC=icc
 #CFLAGS="-Wall -O3 -ipo -qopenmp -std=c99"
 
