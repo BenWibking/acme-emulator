@@ -11,6 +11,8 @@ conda install pycurl
 pip install -r requirements.txt
 ```
 
+In order to compute parameter posterior distributions as done in the ACME paper, you need to download and compile the MultiNest library [https://github.com/farhanferoz/MultiNest]. If you only wish to use the emulator code itself, this is not necessary.
+
 ## Usage
 
 You will need to download the simulation data products by running:
