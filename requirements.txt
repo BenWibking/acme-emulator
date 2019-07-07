@@ -4,6 +4,7 @@ colossus==1.2.9
 corrfunc==2.3.1
 Cython==0.29.2
 doit==0.31.1
+diversipy==0.8
 GetDist==0.3.2
 h5py==2.8.0
 matplotlib==3.0.2
