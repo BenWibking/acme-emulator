@@ -30,11 +30,16 @@ You can specify another download location (e.g. on another filesystem) with the 
 doit -f convert_abacuscosmos.py sample=lowz
 ```
 
-### Running the analysis
+### Computing the training data
 
-Each of the doit pipelines can be run with, e.g.
+The training data can be computed with:
 ```
 doit -f analyze_abacuscosmos.py
 ```
+
+### Training the emulator
+
+The emulator can be trained by...
+
 
 
