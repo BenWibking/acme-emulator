@@ -222,9 +222,9 @@
     <span class="n">M1</span> <span class="o">=</span> <span class="n">Mmin</span><span class="o">*</span><span class="n">M1_over_Mmin</span>
     <span class="n">M0</span> <span class="o">=</span> <span class="n">M1</span><span class="o">*</span><span class="n">M0_over_M1</span>
     
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;logMmin: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">logMmin</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;optimized ngal: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">this_ngal</span><span class="p">(</span><span class="n">logMmin</span><span class="p">),</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;desired ngal: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">ngal</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+<span class="c1">#    print(&#39;logMmin: %s&#39; % logMmin, file=sys.stderr)</span>
+<span class="c1">#    print(&#39;optimized ngal: %s&#39; % this_ngal(logMmin), file=sys.stderr)</span>
+<span class="c1">#    print(&#39;desired ngal: %s&#39; % ngal, file=sys.stderr)</span>
 
     <span class="k">return</span> <span class="n">logMmin</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">M0</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">M1</span><span class="p">)</span></div>
     
@@ -244,9 +244,9 @@
     <span class="n">logMmin</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">optimize</span><span class="o">.</span><span class="n">newton</span><span class="p">(</span><span class="n">objective</span><span class="p">,</span> <span class="n">logMmin_guess</span><span class="p">,</span> <span class="n">maxiter</span> <span class="o">=</span> <span class="mi">100</span><span class="p">)</span>
     <span class="n">Mmin</span> <span class="o">=</span> <span class="mi">10</span><span class="o">**</span><span class="p">(</span><span class="n">logMmin</span><span class="p">)</span>
     
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;logMmin: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">logMmin</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;optimized ncen: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">this_ncen</span><span class="p">(</span><span class="n">logMmin</span><span class="p">),</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;desired ncen: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">ncen</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+<span class="c1">#    print(&#39;logMmin: %s&#39; % logMmin, file=sys.stderr)</span>
+<span class="c1">#    print(&#39;optimized ncen: %s&#39; % this_ncen(logMmin), file=sys.stderr)</span>
+<span class="c1">#    print(&#39;desired ncen: %s&#39; % ncen, file=sys.stderr)</span>
     
     <span class="k">return</span> <span class="n">logMmin</span></div>
 
@@ -263,8 +263,8 @@
                 <span class="nb">str</span><span class="p">(</span><span class="n">A_conc</span><span class="p">),</span><span class="nb">str</span><span class="p">(</span><span class="n">delta_b</span><span class="p">),</span><span class="nb">str</span><span class="p">(</span><span class="n">delta_c</span><span class="p">),</span><span class="nb">str</span><span class="p">(</span><span class="n">R_rescale</span><span class="p">),</span>
                 <span class="nb">str</span><span class="p">(</span><span class="n">boxsize</span><span class="p">),</span>
                 <span class="n">halo_file</span><span class="p">,</span><span class="n">galaxy_file</span><span class="p">,</span><span class="n">env_file</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">is_stochastic</span><span class="p">),</span><span class="nb">str</span><span class="p">(</span><span class="n">seed</span><span class="p">)]</span>
-                
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cmd_line</span><span class="p">),</span><span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+
+<span class="c1">#    print(&#39; &#39;.join(cmd_line),file=sys.stderr)</span>
     
     <span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">cmd_line</span><span class="p">)</span></div>
     
@@ -292,8 +292,8 @@
     
     <span class="k">with</span> <span class="n">h5</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">output_file</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">mock</span><span class="p">:</span>
         <span class="n">vol</span> <span class="o">=</span> <span class="n">boxsize</span><span class="o">**</span><span class="mi">3</span>
-        <span class="n">ngal_obtained</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">mock</span><span class="p">[</span><span class="s1">&#39;particles&#39;</span><span class="p">][</span><span class="s1">&#39;weight&#39;</span><span class="p">])</span> <span class="o">/</span> <span class="n">vol</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;obtained ngal: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">ngal_obtained</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span></div>
+        <span class="n">ngal_obtained</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">mock</span><span class="p">[</span><span class="s1">&#39;particles&#39;</span><span class="p">][</span><span class="s1">&#39;weight&#39;</span><span class="p">])</span> <span class="o">/</span> <span class="n">vol</span></div>
+<span class="c1">#        print(&#39;obtained ngal: %s&#39; % ngal_obtained, file=sys.stderr)</span>
 
 
 

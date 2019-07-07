@@ -3,13 +3,6 @@ import argparse
 from pathlib import Path
 import sys
 
-parser = argparse.ArgumentParser()
-parser.add_argument('input_file',help='input file')
-parser.add_argument('cov_file',help='covariance matrix')
-parser.add_argument('output_file',help='output file')
-
-args = parser.parse_args()
-
 def load_correlation_file(filename):
     table = np.loadtxt(filename,unpack=False)
     binmin, binmax, counts, corr = [table[:,i] for i in range(4)]                        
@@ -27,5 +20,12 @@ def compute_noise(input_file,cov_file,output_file):
                delimiter='\t')
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('input_file',help='input file')
+    parser.add_argument('cov_file',help='covariance matrix')
+    parser.add_argument('output_file',help='output file')
+    
+    args = parser.parse_args()
+
     bins = compute_noise(args.input_file, args.cov_file, args.output_file)
 

@@ -22,15 +22,16 @@ def compute(mock_filename,header_filename,output_filename,rmin=0.1,rmax=125.0,nb
         call_string = [script_path,str(nbins),str(rmin),str(rmax),str(boxsize),str(njackknife),mock_filename]
         subprocess.call(call_string,stdout=output_file)
 
-parser = argparse.ArgumentParser()
-parser.add_argument('HOD_mock_file')
-parser.add_argument('header_file')
-parser.add_argument('output_file')
-#parser.add_argument('mindist',type=float)
-#parser.add_argument('maxdist',type=float)
-#parser.add_argument('nbins',type=int)
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('HOD_mock_file')
+    parser.add_argument('header_file')
+    parser.add_argument('output_file')
+    #parser.add_argument('mindist',type=float)
+    #parser.add_argument('maxdist',type=float)
+    #parser.add_argument('nbins',type=int)
 
-args = parser.parse_args()
+    args = parser.parse_args()
 
-compute(args.HOD_mock_file,args.header_file,args.output_file)
-        #rmin=args.mindist,rmax=args.maxdist,nbins=args.nbins)
+    compute(args.HOD_mock_file,args.header_file,args.output_file)
+    #rmin=args.mindist,rmax=args.maxdist,nbins=args.nbins)
