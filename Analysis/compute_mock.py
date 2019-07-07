@@ -79,9 +79,9 @@ def compute_HOD_parameters(ngal=None, M1_over_Mmin=None, M0_over_M1=None, alpha=
     M1 = Mmin*M1_over_Mmin
     M0 = M1*M0_over_M1
     
-    print('logMmin: %s' % logMmin, file=sys.stderr)
-    print('optimized ngal: %s' % this_ngal(logMmin), file=sys.stderr)
-    print('desired ngal: %s' % ngal, file=sys.stderr)
+#    print('logMmin: %s' % logMmin, file=sys.stderr)
+#    print('optimized ngal: %s' % this_ngal(logMmin), file=sys.stderr)
+#    print('desired ngal: %s' % ngal, file=sys.stderr)
 
     return logMmin, np.log10(M0), np.log10(M1)
     
@@ -101,9 +101,9 @@ def compute_HOD_parameters_centralsonly(ncen=None, siglogM=None, f_cen=None,
     logMmin = scipy.optimize.newton(objective, logMmin_guess, maxiter = 100)
     Mmin = 10**(logMmin)
     
-    print('logMmin: %s' % logMmin, file=sys.stderr)
-    print('optimized ncen: %s' % this_ncen(logMmin), file=sys.stderr)
-    print('desired ncen: %s' % ncen, file=sys.stderr)
+#    print('logMmin: %s' % logMmin, file=sys.stderr)
+#    print('optimized ncen: %s' % this_ncen(logMmin), file=sys.stderr)
+#    print('desired ncen: %s' % ncen, file=sys.stderr)
     
     return logMmin
 
@@ -120,8 +120,8 @@ def populate_hod(halo_file, galaxy_file, env_file,
                 str(A_conc),str(delta_b),str(delta_c),str(R_rescale),
                 str(boxsize),
                 halo_file,galaxy_file,env_file,str(is_stochastic),str(seed)]
-                
-    print(' '.join(cmd_line),file=sys.stderr)
+
+#    print(' '.join(cmd_line),file=sys.stderr)
     
     subprocess.call(cmd_line)
     
@@ -150,7 +150,7 @@ def compute(halo_file,env_file,header_file,output_file,
     with h5.File(output_file, mode='r') as mock:
         vol = boxsize**3
         ngal_obtained = np.sum(mock['particles']['weight']) / vol
-        print('obtained ngal: %s' % ngal_obtained, file=sys.stderr)
+#        print('obtained ngal: %s' % ngal_obtained, file=sys.stderr)
 
 
 

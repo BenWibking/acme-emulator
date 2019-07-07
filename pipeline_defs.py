@@ -28,7 +28,7 @@ if sample == 'lowz':
     rmax = 110.0
     rmin = 0.01
     nbins = 80
-    param_dir = str(Path('./Params/LOWZ_emulator'))
+    param_dir = str(Path('./Params/LOWZ_HOD'))
 
 elif sample == 'lowz-phases':
     boxsize = 720.0
@@ -37,7 +37,7 @@ elif sample == 'lowz-phases':
     rmax = 110.0
     rmin = 0.01
     nbins = 80
-    param_dir = str(Path('./Params/LOWZ_phases'))
+    param_dir = str(Path('./Params/LOWZ_HOD_phases'))
     
 else:
     print("Must specify a simulation set defined in pipeline_defs.py")
