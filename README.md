@@ -34,7 +34,7 @@ doit -f convert_abacuscosmos.py sample=lowz
 
 The training data can be computed with:
 ```
-doit -f analyze_abacuscosmos.py
+doit -f analyze_abacuscosmos.py sample=lowz
 ```
 
 ### Training the emulator
