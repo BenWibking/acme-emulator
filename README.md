@@ -13,7 +13,15 @@ conda install hdf5
 pip install -r requirements.txt
 ```
 
-In order to compute parameter posterior distributions as done in the ACME paper, you need to download and compile the MultiNest library [https://github.com/farhanferoz/MultiNest]. If you only wish to use the emulator code itself, this is not necessary.
+You will need to compile cHOD and fastcorrelation as such:
+```
+cd cHOD
+make
+cd ../fastcorrelation
+make
+```
+
+In order to compute parameter posterior distributions as done in the ACME paper, you need to download and compile the MultiNest library [https://github.com/farhanferoz/MultiNest]. (The path to the libmultinest.so file must also be added to your LD_LIBRARY_PATH.) If you only wish to use the emulator code itself, this is not necessary.
 
 ## Usage
 
