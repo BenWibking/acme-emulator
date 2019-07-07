@@ -177,16 +177,20 @@ if __name__ == '__main__':
 
 	import argparse
 	parser = argparse.ArgumentParser()
-
-	parser.add_argument('fiducial_param_file')
-	parser.add_argument('sampling_param_file')
-	parser.add_argument('output_filename_base')
-	parser.add_argument('simulation_base_dir')
+        
+	parser.add_argument('fiducial_param_file',
+                            default='./Params/NHOD_lowz_fiducial_params.template_param')
+	parser.add_argument('sampling_param_file',
+                            default='./Params/lowz_param_ranges_varyRvir-wide-allcosmo.txt')
+	parser.add_argument('output_filename_base',
+                            default='./Params/LOWZ_HOD')
+	parser.add_argument('simulation_base_dir',
+                            default='./AbacusCosmos/AbacusCosmos_720box')
 	
-	parser.add_argument('--number_per_sim',type=int,default=10)
-	parser.add_argument('--nseeds',type=int,default=10)
-	parser.add_argument('--sample',help='sampling strategy')
-	parser.add_argument('--overwrite_files',default=False,action='store_true')
+	parser.add_argument('--number_per_sim', type=int, default=10)
+	parser.add_argument('--nseeds', type=int, default=20)
+	parser.add_argument('--sample', default='lhs', help='sampling strategy')
+	parser.add_argument('--overwrite_files', default=False, action='store_true')
 
 	args = parser.parse_args()
 
