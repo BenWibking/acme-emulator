@@ -30,6 +30,13 @@ You can specify another download location (e.g. on another filesystem) with the 
 doit -f convert_abacuscosmos.py sample=lowz
 ```
 
+### Creating the Latin Hypercube
+
+The Latin Hypercube design for the training data can be created via:
+```
+python create_params_LOWZ_emu.py
+```
+
 ### Computing the training data
 
 The training data can be computed with:

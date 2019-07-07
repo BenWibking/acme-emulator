@@ -2,7 +2,7 @@ import numpy as np
 import argparse
 import configparser
 from pathlib import Path
-from create_params_cmassemu import write_param_file
+from create_params_LOWZ_emu import write_param_file
 
 
 if __name__ == '__main__':
