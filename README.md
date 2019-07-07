@@ -56,7 +56,7 @@ The emulator can be trained by
 python Analysis/fit_data.py
 ```
 
-For approximately 400 training points, this will take 30 seconds to 5 minutes per correlation function bin, depending on your CPU speed and whether your modify the optimization parameters.
+For approximately 400 training points, this will take 30 seconds to 5 minutes per correlation function bin, depending on your CPU speed and whether you modify the optimization parameters.
 
 
 
