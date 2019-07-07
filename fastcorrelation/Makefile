@@ -1,11 +1,14 @@
-#CC=gcc -m64
-#CFLAGS=-g -Wall -std=c99 -O0
-CC=icc
-CFLAGS=-g -O3 -Wall -march=native -std=c99
-#HDF5_C_INCLUDE=-I/usr/current/anaconda/include
-#HDF5_C_LIBS=-lhdf5
-INCLUDE=-I $(HOME)/include $(HDF5_C_INCLUDE) $(MPI_CFLAGS)
-LIB=-L $(HOME)/lib $(HDF5_C_LIBS) -lgsl -lgslcblas 
+CC=gcc -m64
+CFLAGS=-g -Wall -std=c99 -O0
+
+#CC=icc
+#CFLAGS=-g -O3 -Wall -march=native -std=c99
+
+HDF5_C_INCLUDE=
+HDF5_C_LIBS=-lhdf5
+
+INCLUDE=`gsl-config --cflags` $(HDF5_C_INCLUDE) $(MPI_CFLAGS)
+LIB=`gsl-config --libs` $(HDF5_C_LIBS)
 
 OBJS_AUTO=hash.o auto_counts.o read_hdf5.o main.o
 OBJS_TEST_AUTO=hash.o auto_counts.o read_hdf5.o test_auto.o

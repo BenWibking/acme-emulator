@@ -1,6 +1,7 @@
 beautifulsoup4==4.6.3
 camb==1.0.4
 colossus==1.2.9
+corrfunc==2.3.1
 Cython==0.29.2
 doit==0.31.1
 GetDist==0.3.2

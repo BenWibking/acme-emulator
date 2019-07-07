@@ -8,6 +8,8 @@ Clone this git repository. It is recommended to create a new virtual environment
 conda create -n acme python=3.7
 conda activate acme
 conda install pycurl
+conda install gsl
+conda install hdf5
 pip install -r requirements.txt
 ```
 
