@@ -14,185 +14,42 @@ else:
 import configparser
 from pathlib import Path
 
+
 ## read in parameters
 
 from doit import get_var
 sample = get_var('sample',None)
 print("sample = {}".format(sample))
 
-if sample == 'sdss21':
+if sample == 'lowz':
     boxsize = 720.0
-    working_directory = Path('./simulations/Snapshots/720Mpc_Cosmo0')
-    redshift = 'z0.100'
-    rmax = 110.0
-    rmin = 0.01
-    nbins = 80
-    param_dir = str(Path('./Params/SDSS_Main'))
-
-elif sample == 'cmass-emulator':
-    boxsize = 720.0
-    working_directory = Path('./AbacusCosmos_720box')
-    redshift = 'z0.500'
-    rmax = 110.0
-    rmin = 0.01
-    nbins = 80
-    param_dir = str(Path('./Params/CMASS_emulator'))
-
-elif sample == 'lowz-01':
-    boxsize = 720.0
-    working_directory = Path('./AbacusCosmos_720box')
-    redshift = 'z0.100'
-    rmax = 110.0
-    rmin = 0.01
-    nbins = 80
-    param_dir = str(Path('./Params/LOWZ_emulator_01'))
-
-elif sample == 'lowz-03':
-    boxsize = 720.0
-    working_directory = Path('./AbacusCosmos_720box')
+    working_directory = Path('./AbacusCosmos/AbacusCosmos_720box')
     redshift = 'z0.300'
     rmax = 110.0
     rmin = 0.01
     nbins = 80
-    param_dir = str(Path('./Params/LOWZ_emulator_03'))
+    param_dir = str(Path('./Params/LOWZ_emulator'))
 
-elif sample == 'lowz-05':
+elif sample == 'lowz-phases':
     boxsize = 720.0
-    working_directory = Path('./AbacusCosmos_720box')
-    redshift = 'z0.500'
+    working_directory = Path('./AbacusCosmos/AbacusCosmos_phases')
+    redshift = 'z0.300'
     rmax = 110.0
     rmin = 0.01
     nbins = 80
-    param_dir = str(Path('./Params/LOWZ_emulator_05'))
+    param_dir = str(Path('./Params/LOWZ_phases'))
     
-elif sample == 'lowz-phases-03':
-    boxsize = 720.0
-    working_directory = Path('./AbacusCosmos_phases')
-    redshift = 'z0.300'
-    rmax = 110.0
-    rmin = 0.01
-    nbins = 80
-    param_dir = str(Path('./Params/LOWZ_phases_03'))
-    
-elif sample == 'abacuscosmos-z07':
-    boxsize = 720.0
-    working_directory = Path('./AbacusCosmos_720box')
-    redshift = 'z0.700'
-    rmax = 110.0
-    rmin = 0.01
-    nbins = 80
-    param_dir = str(Path('./Params/CMASS_emulator_07'))
-    
-elif sample == 'cmass-emulator-phases':
-    boxsize = 720.0
-    working_directory = Path('./AbacusCosmos_phases')
-    redshift = 'z0.500'
-    rmax = 110.0
-    rmin = 0.01
-    nbins = 80
-    param_dir = str(Path('./Params/CMASS_emulator_phases'))
-
-elif sample == 'lowz':
-    boxsize = 720.0
-    working_directory = Path('./simulations/Snapshots/720Mpc_Cosmo0')
-    redshift = 'z0.300'
-    rmax = 110.0
-    rmin = 0.01
-    nbins = 80
-    param_dir = str(Path('./Params/LOWZ'))
-
-#elif sample == 'lowz-emulator':
-#    boxsize = 720.0
-#    working_directory = Path('./simulations/Snapshots/emulator_720')
-#    redshift = 'z0.300'
-#    rmax = 110.0
-#    rmin = 0.01
-#    nbins = 80
-#    param_dir = str(Path('./Params/LOWZ_emulator'))
-
-elif sample == 'lowz-hod-test':
-    boxsize = 720.0
-    working_directory = Path('./simulations/Snapshots/720Mpc_Cosmo0')
-    redshift = 'z0.300'
-    rmax = 110.0
-    rmin = 0.01
-    nbins = 80
-    param_dir = str(Path('./Params/LOWZ_HOD_tests'))
-
-elif sample == 'lowz-hod-test-singleparameter':
-    boxsize = 720.0
-    working_directory = Path('./simulations/Snapshots/720Mpc_Cosmo0')
-    redshift = 'z0.300'
-    rmax = 110.0
-    rmin = 0.01
-    nbins = 80
-    param_dir = str(Path('./Params/LOWZ_HOD_tests_singleparameter'))
-
-elif sample == 'lowz-hod-test-1sigma':
-    boxsize = 720.0
-    working_directory = Path('./simulations/Snapshots/720Mpc_Cosmo0')
-    redshift = 'z0.300'
-    rmax = 110.0
-    rmin = 0.01
-    nbins = 80
-    param_dir = str(Path('./Params/LOWZ_HOD_tests_sampleposterior_1sigma'))
-
-elif sample == 'lowz-hod-test-2sigma':
-    boxsize = 720.0
-    working_directory = Path('./simulations/Snapshots/720Mpc_Cosmo0')
-    redshift = 'z0.300'
-    rmax = 110.0
-    rmin = 0.01
-    nbins = 80
-    param_dir = str(Path('./Params/LOWZ_HOD_tests_sampleposterior_2sigma'))
-
-elif sample == 'lowz-hod-test-3sigma':
-    boxsize = 720.0
-    working_directory = Path('./simulations/Snapshots/720Mpc_Cosmo0')
-    redshift = 'z0.300'
-    rmax = 110.0
-    rmin = 0.01
-    nbins = 80
-    param_dir = str(Path('./Params/LOWZ_HOD_tests_sampleposterior_3sigma'))
-
-elif sample == 'lowz-concentration-test':
-    boxsize = 720.0
-    working_directory = Path('./simulations/Snapshots/720Mpc_Cosmo0')
-    redshift = 'z0.300'
-    rmax = 110.0
-    rmin = 0.01
-    nbins = 80
-    param_dir = str(Path('./Params/LOWZ_concentration_test'))
-
-elif sample == 'redmagic':
-    boxsize = 720.0
-    working_directory = Path('./simulations/Snapshots/720Mpc_Cosmo0')
-    redshift = 'z0.300'
-    rmax = 110.0
-    rmin = 0.01
-    nbins = 80
-    param_dir = str(Path('./Params/redmagic'))
-
-elif sample == 'redmagic-phases':
-    boxsize = 720.0
-    working_directory = Path('./phases_plummer')
-    redshift = 'z0.300'
-    rmax = 110.0
-    rmin = 0.01
-    nbins = 80
-    param_dir = str(Path('./Params/redmagic-phases'))
-
 else:
-    print("Must specify a boxsize defined in pipeline_defs.py")
+    print("Must specify a simulation set defined in pipeline_defs.py")
     exit(1)
 
 halos = get_var('halos',None)
 if halos == 'FOF':
-#    exit("You specified FOF halos. This is a mistake.")
     halo_working_directory = working_directory / 'FOF'
 else:
     halo_working_directory = working_directory / 'Rockstar'
 
+    
 ## convenience functions
 
 def param_files_in_dir(subdir):
@@ -278,6 +135,7 @@ def hdf5_FOF_catalog_this_sim(subdir):
 def hdf5_Rockstar_catalog_this_file(halo_file):
     return str(halo_file)+'.hdf5'
 
+
 #*******************#*******************#*******************
 #***** Results that do NOT depend on galaxy population *****
 #*******************#*******************#*******************
@@ -296,6 +154,7 @@ def txt_nonlinear_matter_bias_this_sim(subdir):
 
 def txt_ln_bnl_this_sim(subdir):
     return str(subdir)+'/ln_bnl.txt'
+
 
 #*******************#*******************#*******************
 #***** Results (that *do* depend on galaxy population) *****
@@ -468,6 +327,7 @@ def txt_emulated_DS_this_param(param_file):
 
 def txt_fractional_accuracy_emulated_DS_this_param(param_file):
     return str(param_file)+'.accuracy_emulated_DS.txt'
+
 
 #********************
 #***** Plotting *****

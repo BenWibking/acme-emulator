@@ -24,11 +24,17 @@ python download_sim_files.py
 
 You can specify another download location (e.g. on another filesystem) with the --download_path option. The analysis scripts assume that the simulation files are accessible from within this directory, so you will need to create a symbolic link to the download path from the repository directory.
 
+### Converting file formats
+
+```
+doit -f convert_abacuscosmos.py sample=lowz
+```
+
 ### Running the analysis
 
 Each of the doit pipelines can be run with, e.g.
 ```
-doit -f Workflows/analyze_abacuscosmos.py
+doit -f analyze_abacuscosmos.py
 ```
 
 

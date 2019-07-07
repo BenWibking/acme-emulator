@@ -6,6 +6,8 @@ import os
 rockstar_subdirectories = list(recursive_iter(working_directory / 'Rockstar'))
 FOF_subdirectories = list(recursive_iter(working_directory / 'FOF'))
 
+print(working_directory)
+print(list(recursive_iter(working_directory / 'Rockstar')))
 
 def task_convert_binary_particles_to_hdf5():
 
@@ -13,7 +15,6 @@ def task_convert_binary_particles_to_hdf5():
 
 	for subdir in FOF_subdirectories:
 
-		# [str(x) for x in Path(subdir).glob('field_particles_[0-9]')]+[str(x) for x in Path(subdir).glob('particles_[0-9]')]
 		inputs = [str(Path(subdir) / x) for x in ['field_subsamples.bin', 'halo_subsamples.bin']]
 		combined_bin = binary_particles_this_sim(subdir)
 
