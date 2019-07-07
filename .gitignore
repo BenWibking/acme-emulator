@@ -1,3 +1,11 @@
 doit-db.sqlite3
+*.o
 __pycache__
 AbacusCosmos/
+Params/LOWZ_HOD/
+cHOD/compute_mocks
+fastcorrelation/auto
+fastcorrelation/cross
+fastcorrelation/density
+fastcorrelation/test_auto
+fastcorrelation/test_cross
