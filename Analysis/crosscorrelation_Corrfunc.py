@@ -194,7 +194,7 @@ else:
 
 
 ## write output
-print("output to: {}".format(args.output_file),file=sys.stderr)
+#print("output to: {}".format(args.output_file),file=sys.stderr)
 with open(str(args.output_file), 'w') as outfile:
   outfile.write("# rmin rmax npairs xi\n")
   for i in range(xi.shape[0]):
