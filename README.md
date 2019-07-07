@@ -47,9 +47,16 @@ The training data can be computed with:
 doit -f analyze_abacuscosmos.py sample=lowz
 ```
 
+If you are reproducing the training data used in Wibking+ (2019), this step may take 5-7 days or longer, depending on your CPU and storage speed.
+
 ### Training the emulator
 
-The emulator can be trained by...
+The emulator can be trained by
+```
+python Analysis/fit_data.py
+```
+
+For approximately 400 training points, this will take 30 seconds to 5 minutes per correlation function bin, depending on your CPU speed and whether your modify the optimization parameters.
 
 
 
