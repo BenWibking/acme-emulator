@@ -10,9 +10,6 @@ import scipy.stats
 import numpy as np
 import scipy.linalg
 
-#import autograd.numpy as np
-#import autograd.numpy.linalg
-
 from predict_emulator import get_emulate_fun, compute_analytic_wp
 
 

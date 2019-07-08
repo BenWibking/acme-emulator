@@ -23,6 +23,9 @@ dependencies:
   - libopenblas=0.3.6=h6e990d7_4
   - libssh2=1.8.2=h22169c7_2
   - libstdcxx-ng=9.1.0=hdf63c60_0
+  - mpi=1.0=mpich
+  - mpi4py=3.0.1=py37hf046da1_0
+  - mpich=3.2.1=hc99cbb1_1012
   - ncurses=6.1=hf484d3e_1002
   - nlopt=2.6.1=py37hc452a1b_0
   - numpy=1.16.4=py37h95a1406_0
