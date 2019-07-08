@@ -55,6 +55,12 @@ doit -f analyze_abacuscosmos.py sample=lowz
 
 If you are reproducing the training data used in Wibking+ (2019), this step may take 5-7 days or longer, depending on your CPU and storage speed.
 
+You will need to run this commmand a second time to finish the computation. (This may be fixed in a future version.)
+```
+doit -f analyze_abacuscosmos.py sample=lowz
+```
+
+
 ### Training the emulator
 
 The emulator for projected galaxy clustering ($w_p$) can be trained by

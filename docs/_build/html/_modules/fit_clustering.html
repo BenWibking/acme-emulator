@@ -1,0 +1,901 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>fit_clustering &mdash; ACME Emulator  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> ACME Emulator
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ACME Emulator</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">Module code</a> &raquo;</li>
+        
+      <li>fit_clustering</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for fit_clustering</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">h5py</span>
+<span class="kn">import</span> <span class="nn">configparser</span>
+<span class="kn">import</span> <span class="nn">nlopt</span>
+<span class="kn">import</span> <span class="nn">mpmath</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">mpi4py</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="k">import</span> <span class="n">Path</span>
+<span class="kn">import</span> <span class="nn">scipy.stats</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">scipy.linalg</span>
+
+<span class="kn">from</span> <span class="nn">predict_emulator</span> <span class="k">import</span> <span class="n">get_emulate_fun</span><span class="p">,</span> <span class="n">compute_analytic_wp</span>
+
+
+<div class="viewcode-block" id="exec_mpi"><a class="viewcode-back" href="../fit_clustering.html#fit_clustering.exec_mpi">[docs]</a><span class="k">def</span> <span class="nf">exec_mpi</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+	<span class="k">if</span> <span class="s1">&#39;mpi4py&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+		<span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+	<span class="k">else</span><span class="p">:</span>
+		<span class="kn">import</span> <span class="nn">mpi4py.MPI</span>
+		<span class="n">comm</span> <span class="o">=</span> <span class="n">mpi4py</span><span class="o">.</span><span class="n">MPI</span><span class="o">.</span><span class="n">COMM_WORLD</span>
+		<span class="n">rank</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">Get_rank</span><span class="p">()</span>
+		<span class="k">if</span> <span class="n">rank</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+			<span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="print_mpi"><a class="viewcode-back" href="../fit_clustering.html#fit_clustering.print_mpi">[docs]</a><span class="k">def</span> <span class="nf">print_mpi</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">):</span>
+	<span class="n">exec_mpi</span><span class="p">(</span><span class="nb">print</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="savetxt_mpi"><a class="viewcode-back" href="../fit_clustering.html#fit_clustering.savetxt_mpi">[docs]</a><span class="k">def</span> <span class="nf">savetxt_mpi</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">):</span>
+	<span class="n">exec_mpi</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="sherman_morrison_singular_inv"><a class="viewcode-back" href="../fit_clustering.html#fit_clustering.sherman_morrison_singular_inv">[docs]</a><span class="k">def</span> <span class="nf">sherman_morrison_singular_inv</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">u</span><span class="p">):</span>
+
+	<span class="sd">&quot;&quot;&quot;compute the inverse covariance matrix that projects out the data vector v.</span>
+<span class="sd">	   For lnL_correction, see eq. (10) arXiv:astro-ph/0112114v2.&quot;&quot;&quot;</span>
+
+	<span class="n">Ainv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">matrix</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">A</span><span class="p">)</span> <span class="p">)</span>
+	<span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">matrix</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+
+	<span class="n">Cinv</span> <span class="o">=</span> 	<span class="n">Ainv</span> <span class="o">-</span> <span class="p">(</span><span class="n">Ainv</span> <span class="o">@</span> <span class="n">v</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">v</span> <span class="o">@</span> <span class="n">Ainv</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">v</span> <span class="o">@</span> <span class="n">Ainv</span> <span class="o">@</span> <span class="n">v</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+	<span class="p">(</span><span class="n">sign</span><span class="p">,</span> <span class="n">logdet</span><span class="p">)</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">slogdet</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">v</span> <span class="o">@</span> <span class="n">Ainv</span> <span class="o">@</span> <span class="n">v</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+	<span class="n">lnL_correction</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="n">logdet</span>
+
+	<span class="k">return</span> <span class="n">Cinv</span><span class="p">,</span> <span class="n">lnL_correction</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+
+	<span class="kn">import</span> <span class="nn">argparse</span>
+	<span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;wp_obs_file&#39;</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;input_wp_emu_filename&#39;</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;wp_cov_file&#39;</span><span class="p">)</span>
+
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;ds_obs_file&#39;</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;input_ds_emu_filename&#39;</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;ds_cov_file&#39;</span><span class="p">)</span>
+
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;fiducial_param_file&#39;</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;param_sampling_file&#39;</span><span class="p">)</span>
+
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;fit_wp_file&#39;</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;fit_ds_file&#39;</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;fit_param_file&#39;</span><span class="p">)</span>
+
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--multinest&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--mcmc&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--mcmc-ppd&#39;</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--mcmc-chain&#39;</span><span class="p">)</span>
+
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--wp-correction&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>	<span class="c1"># from phases ensemble</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--ds-correction&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>	<span class="c1"># from phases ensemble</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--rsd-correction&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--cov-inv-output&#39;</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--cov-output&#39;</span><span class="p">)</span>
+
+	<span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+
+	<span class="c1">## fiducial parameters</span>
+	<span class="n">parser</span> <span class="o">=</span> <span class="n">configparser</span><span class="o">.</span><span class="n">ConfigParser</span><span class="p">()</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">fiducial_param_file</span><span class="p">)</span>
+	<span class="n">fiducial_params</span> <span class="o">=</span> <span class="n">parser</span><span class="p">[</span><span class="s1">&#39;params&#39;</span><span class="p">]</span>
+
+	<span class="n">parser_range</span> <span class="o">=</span> <span class="n">configparser</span><span class="o">.</span><span class="n">ConfigParser</span><span class="p">()</span>
+	<span class="n">parser_range</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">param_sampling_file</span><span class="p">)</span>
+	<span class="n">min_params</span> <span class="o">=</span> <span class="n">parser_range</span><span class="p">[</span><span class="s1">&#39;params_min&#39;</span><span class="p">]</span>
+	<span class="n">max_params</span> <span class="o">=</span> <span class="n">parser_range</span><span class="p">[</span><span class="s1">&#39;params_max&#39;</span><span class="p">]</span>
+	<span class="n">gaussian_priors</span> <span class="o">=</span> <span class="n">parser_range</span><span class="p">[</span><span class="s1">&#39;gaussian_priors&#39;</span><span class="p">]</span>
+	<span class="n">analysis_settings</span> <span class="o">=</span> <span class="n">parser_range</span><span class="p">[</span><span class="s1">&#39;settings&#39;</span><span class="p">]</span>
+
+	<span class="n">use_pointmass</span> <span class="o">=</span> <span class="n">analysis_settings</span><span class="p">[</span><span class="s1">&#39;use_pointmass&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+	<span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;use_pointmass = </span><span class="si">{use_pointmass}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+	<span class="n">ds_calibration_prior_sigma</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">gaussian_priors</span><span class="p">[</span><span class="s1">&#39;ds_calibration_prior&#39;</span><span class="p">])</span>
+
+	<span class="n">ngal_fiducial</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">fiducial_params</span><span class="p">[</span><span class="s1">&#39;ngal&#39;</span><span class="p">])</span>
+	<span class="n">siglogM_fiducial</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">fiducial_params</span><span class="p">[</span><span class="s1">&#39;siglogM&#39;</span><span class="p">])</span>
+	<span class="n">M0_ratio_fiducial</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">fiducial_params</span><span class="p">[</span><span class="s1">&#39;M0_over_M1&#39;</span><span class="p">])</span>
+	<span class="n">M1_ratio_fiducial</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">fiducial_params</span><span class="p">[</span><span class="s1">&#39;M1_over_Mmin&#39;</span><span class="p">])</span>
+	<span class="n">alpha_fiducial</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">fiducial_params</span><span class="p">[</span><span class="s1">&#39;alpha&#39;</span><span class="p">])</span>
+	<span class="n">fcen_fiducial</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">fiducial_params</span><span class="p">[</span><span class="s1">&#39;f_cen&#39;</span><span class="p">])</span>
+	<span class="n">Aconc_fiducial</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">fiducial_params</span><span class="p">[</span><span class="s1">&#39;A_conc&#39;</span><span class="p">])</span>
+	<span class="n">Rrescale_fiducial</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">fiducial_params</span><span class="p">[</span><span class="s1">&#39;R_rescale&#39;</span><span class="p">])</span>
+
+	<span class="n">omegam_fiducial</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">fiducial_params</span><span class="p">[</span><span class="s1">&#39;omega_m&#39;</span><span class="p">])</span>
+	<span class="n">sigma8_fiducial</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">fiducial_params</span><span class="p">[</span><span class="s1">&#39;sigma_8&#39;</span><span class="p">])</span>
+	<span class="n">H0_fiducial</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">fiducial_params</span><span class="p">[</span><span class="s1">&#39;H0&#39;</span><span class="p">])</span>
+	<span class="n">ns_fiducial</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">fiducial_params</span><span class="p">[</span><span class="s1">&#39;ns&#39;</span><span class="p">])</span>
+	<span class="n">omegab_fiducial</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">fiducial_params</span><span class="p">[</span><span class="s1">&#39;omega_b&#39;</span><span class="p">])</span>
+	<span class="n">w0_fiducial</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">fiducial_params</span><span class="p">[</span><span class="s1">&#39;w0&#39;</span><span class="p">])</span>
+	<span class="n">redshift_fiducial</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">fiducial_params</span><span class="p">[</span><span class="s1">&#39;redshift&#39;</span><span class="p">])</span>
+	<span class="n">ds_calibration_fiducial</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+	<span class="n">fcen_fiducial</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+	<span class="n">ngal_min</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">min_params</span><span class="p">[</span><span class="s1">&#39;ngal&#39;</span><span class="p">])</span>
+	<span class="n">siglogM_min</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">min_params</span><span class="p">[</span><span class="s1">&#39;siglogM&#39;</span><span class="p">])</span>
+	<span class="n">M0_ratio_min</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">min_params</span><span class="p">[</span><span class="s1">&#39;M0_over_M1&#39;</span><span class="p">])</span>
+	<span class="n">M1_ratio_min</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">min_params</span><span class="p">[</span><span class="s1">&#39;M1_over_Mmin&#39;</span><span class="p">])</span>
+	<span class="n">alpha_min</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">min_params</span><span class="p">[</span><span class="s1">&#39;alpha&#39;</span><span class="p">])</span>
+<span class="c1">#	fcen_min = float(min_params[&#39;f_cen&#39;])</span>
+	<span class="n">Aconc_min</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">min_params</span><span class="p">[</span><span class="s1">&#39;A_conc&#39;</span><span class="p">])</span>
+	<span class="n">Rrescale_min</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">min_params</span><span class="p">[</span><span class="s1">&#39;R_rescale&#39;</span><span class="p">])</span>
+
+	<span class="n">omegam_min</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">min_params</span><span class="p">[</span><span class="s1">&#39;omega_m&#39;</span><span class="p">])</span>
+	<span class="n">sigma8_min</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">min_params</span><span class="p">[</span><span class="s1">&#39;sigma_8&#39;</span><span class="p">])</span>
+	<span class="n">H0_min</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">min_params</span><span class="p">[</span><span class="s1">&#39;H0&#39;</span><span class="p">])</span>
+	<span class="n">ns_min</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">min_params</span><span class="p">[</span><span class="s1">&#39;ns&#39;</span><span class="p">])</span>
+	<span class="n">omegab_min</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">min_params</span><span class="p">[</span><span class="s1">&#39;omega_b&#39;</span><span class="p">])</span>
+	<span class="n">w0_min</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">min_params</span><span class="p">[</span><span class="s1">&#39;w0&#39;</span><span class="p">])</span>
+	<span class="n">redshift_min</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">min_params</span><span class="p">[</span><span class="s1">&#39;redshift&#39;</span><span class="p">])</span>
+	<span class="n">ds_calibration_min</span> <span class="o">=</span> <span class="mf">0.8</span>
+
+	<span class="n">ngal_max</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">max_params</span><span class="p">[</span><span class="s1">&#39;ngal&#39;</span><span class="p">])</span>
+	<span class="n">siglogM_max</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">max_params</span><span class="p">[</span><span class="s1">&#39;siglogM&#39;</span><span class="p">])</span>
+	<span class="n">M0_ratio_max</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">max_params</span><span class="p">[</span><span class="s1">&#39;M0_over_M1&#39;</span><span class="p">])</span>
+	<span class="n">M1_ratio_max</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">max_params</span><span class="p">[</span><span class="s1">&#39;M1_over_Mmin&#39;</span><span class="p">])</span>
+	<span class="n">alpha_max</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">max_params</span><span class="p">[</span><span class="s1">&#39;alpha&#39;</span><span class="p">])</span>
+<span class="c1">#	fcen_max = float(max_params[&#39;f_cen&#39;])</span>
+	<span class="n">Aconc_max</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">max_params</span><span class="p">[</span><span class="s1">&#39;A_conc&#39;</span><span class="p">])</span>
+	<span class="n">Rrescale_max</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">max_params</span><span class="p">[</span><span class="s1">&#39;R_rescale&#39;</span><span class="p">])</span>
+
+	<span class="n">omegam_max</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">max_params</span><span class="p">[</span><span class="s1">&#39;omega_m&#39;</span><span class="p">])</span>
+	<span class="n">sigma8_max</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">max_params</span><span class="p">[</span><span class="s1">&#39;sigma_8&#39;</span><span class="p">])</span>
+	<span class="n">H0_max</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">max_params</span><span class="p">[</span><span class="s1">&#39;H0&#39;</span><span class="p">])</span>
+	<span class="n">ns_max</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">max_params</span><span class="p">[</span><span class="s1">&#39;ns&#39;</span><span class="p">])</span>
+	<span class="n">omegab_max</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">max_params</span><span class="p">[</span><span class="s1">&#39;omega_b&#39;</span><span class="p">])</span>
+	<span class="n">w0_max</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">max_params</span><span class="p">[</span><span class="s1">&#39;w0&#39;</span><span class="p">])</span>
+	<span class="n">redshift_max</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">max_params</span><span class="p">[</span><span class="s1">&#39;redshift&#39;</span><span class="p">])</span>
+	<span class="n">ds_calibration_max</span> <span class="o">=</span> <span class="mf">1.2</span>
+
+	<span class="k">assert</span><span class="p">(</span> <span class="n">redshift_min</span> <span class="o">==</span> <span class="n">redshift_max</span> <span class="p">)</span>
+	<span class="n">redshift_fiducial</span> <span class="o">=</span> <span class="n">redshift_min</span>
+
+
+	<span class="c1">## read in observed wp</span>
+
+	<span class="n">print_mpi</span><span class="p">(</span><span class="s2">&quot;reading in observed wp and DS...&quot;</span><span class="p">)</span>
+
+	<span class="n">obs_binmin</span><span class="p">,</span> <span class="n">obs_binmax</span><span class="p">,</span> <span class="n">mock_wp_err</span><span class="p">,</span> <span class="n">mock_wp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">wp_obs_file</span><span class="p">,</span> <span class="n">unpack</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+	<span class="n">ds_binmin</span><span class="p">,</span>  <span class="n">ds_binmax</span><span class="p">,</span>  <span class="n">mock_ds_err</span><span class="p">,</span> <span class="n">mock_ds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">ds_obs_file</span><span class="p">,</span> <span class="n">unpack</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+	<span class="k">assert</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span> <span class="n">obs_binmin</span><span class="p">,</span> <span class="n">ds_binmin</span> <span class="p">)</span> <span class="p">)</span>
+	<span class="k">assert</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span> <span class="n">obs_binmax</span><span class="p">,</span> <span class="n">ds_binmax</span> <span class="p">)</span> <span class="p">)</span>
+
+	<span class="n">scale_min</span> <span class="o">=</span> <span class="mf">0.6</span> <span class="c1"># Mpc/h (determined by fiber collisions)</span>
+<span class="c1">#	scale_min = 2.0 # Mpc/h</span>
+	<span class="n">scale_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+	<span class="n">scale_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">((</span><span class="n">obs_binmin</span> <span class="o">&gt;=</span> <span class="n">scale_min</span><span class="p">),</span> <span class="p">(</span><span class="n">obs_binmax</span> <span class="o">&lt;=</span> <span class="n">scale_max</span><span class="p">))</span>
+
+	<span class="n">rp_vector</span> <span class="o">=</span> <span class="p">(</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">obs_binmin</span> <span class="o">+</span> <span class="n">obs_binmax</span><span class="p">)</span> <span class="p">)[</span><span class="n">scale_mask</span><span class="p">]</span>
+	<span class="n">mock_datavector</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">mock_wp</span><span class="p">[</span><span class="n">scale_mask</span><span class="p">],</span> <span class="n">mock_ds</span><span class="p">[</span><span class="n">scale_mask</span><span class="p">]])</span>
+
+	<span class="n">print_mpi</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;obs_binmin: </span><span class="si">{obs_binmin}</span><span class="s2">&quot;</span><span class="p">)</span>
+	<span class="n">print_mpi</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;obs_binmax: </span><span class="si">{obs_binmax}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+
+	<span class="c1">## read wp ratio correction</span>
+
+	<span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">wp_correction</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">Path</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">wp_correction</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+		<span class="n">corr_binmin</span><span class="p">,</span> <span class="n">corr_binmax</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">wp_correction</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">wp_correction</span><span class="p">,</span>
+																	  <span class="n">unpack</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+		<span class="k">assert</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">corr_binmin</span><span class="p">,</span> <span class="n">obs_binmin</span><span class="p">)</span> <span class="p">)</span>
+		<span class="k">assert</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">corr_binmax</span><span class="p">,</span> <span class="n">obs_binmax</span><span class="p">)</span> <span class="p">)</span>
+	<span class="k">else</span><span class="p">:</span>
+		<span class="n">wp_correction</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">mock_wp</span><span class="p">)</span>
+
+
+	<span class="n">print_mpi</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;wp correction (multiplicative) = </span><span class="si">{wp_correction}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+
+	<span class="c1">## read DS correction (multiplicative)</span>
+
+	<span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">ds_correction</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">Path</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">ds_correction</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+		<span class="n">dscorr_binmin</span><span class="p">,</span> <span class="n">dscorr_binmax</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">ds_correction</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">ds_correction</span><span class="p">,</span>
+																	<span class="n">unpack</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+		<span class="k">assert</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">dscorr_binmin</span><span class="p">,</span> <span class="n">obs_binmin</span><span class="p">)</span> <span class="p">)</span>
+		<span class="k">assert</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">dscorr_binmax</span><span class="p">,</span> <span class="n">obs_binmax</span><span class="p">)</span> <span class="p">)</span>
+	<span class="k">else</span><span class="p">:</span>
+		<span class="n">ds_correction</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">mock_ds</span><span class="p">)</span>
+
+	<span class="n">print_mpi</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;ds correction (multiplicative) = </span><span class="si">{ds_correction}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+
+	<span class="c1">## read RSD correction</span>
+
+	<span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">rsd_correction</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">Path</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">rsd_correction</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+		<span class="n">rsd_binmin</span><span class="p">,</span> <span class="n">rsd_binmax</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">rsd_correction</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">rsd_correction</span><span class="p">,</span><span class="n">unpack</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+		<span class="k">assert</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">rsd_binmin</span><span class="p">,</span> <span class="n">obs_binmin</span><span class="p">)</span> <span class="p">)</span>
+		<span class="k">assert</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">rsd_binmax</span><span class="p">,</span> <span class="n">obs_binmax</span><span class="p">)</span> <span class="p">)</span>
+	<span class="k">else</span><span class="p">:</span>
+		<span class="n">rsd_correction</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">mock_wp</span><span class="p">)</span>
+
+	<span class="n">print_mpi</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;rsd correction (multiplicative) = </span><span class="si">{rsd_correction}</span><span class="s2">&quot;</span><span class="p">)</span>
+	<span class="n">print_mpi</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+
+	<span class="c1">## read in covariance for wp</span>
+
+	<span class="n">wp_cov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">wp_cov_file</span><span class="p">)</span>
+	<span class="n">wp_cov</span> <span class="o">=</span> <span class="n">wp_cov</span><span class="p">[</span><span class="n">scale_mask</span><span class="p">,:][:,</span><span class="n">scale_mask</span><span class="p">]</span>
+
+
+	<span class="c1">## rescale wp covariance for appropriate volume</span>
+	<span class="c1"># [effective volume computed for LOWZ (but is actually NGC only!)]</span>
+	<span class="n">R_survey</span> <span class="o">=</span> <span class="mf">913.26</span>	<span class="c1"># Mpc/h</span>
+
+	<span class="n">box_length</span> <span class="o">=</span> <span class="mf">1100.</span>	<span class="c1"># Mpc/h</span>
+	<span class="n">Nbootstrap</span> <span class="o">=</span> <span class="mi">20</span><span class="o">*</span><span class="mi">25</span>						<span class="c1">## TODO: make this an input parameter!</span>
+	<span class="n">Nmocks</span> <span class="o">=</span> <span class="n">Nbootstrap</span>						<span class="c1">#  these happen to be the same</span>
+	<span class="n">vol_subvolume</span> <span class="o">=</span> <span class="p">(</span><span class="n">box_length</span><span class="p">)</span><span class="o">**</span><span class="mi">3</span> <span class="o">/</span> <span class="mi">25</span>
+	<span class="n">vol_survey</span> <span class="o">=</span> <span class="n">R_survey</span><span class="o">**</span><span class="mi">3</span>
+	<span class="n">wp_cov</span> <span class="o">*=</span> <span class="n">Nbootstrap</span>					<span class="c1">## need to rescale by number of bootstrap samples</span>
+	<span class="n">wp_cov</span> <span class="o">*=</span> <span class="p">(</span><span class="n">vol_subvolume</span> <span class="o">/</span> <span class="n">vol_survey</span><span class="p">)</span>	<span class="c1">## need to rescale by inv. vol of survey</span>
+
+
+	<span class="c1">## read in DS covariance [must be already normalized!]</span>
+
+	<span class="n">ds_cov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">ds_cov_file</span><span class="p">)</span>
+	<span class="n">ds_cov</span> <span class="o">=</span> <span class="n">ds_cov</span><span class="p">[</span><span class="n">scale_mask</span><span class="p">,:][:,</span><span class="n">scale_mask</span><span class="p">]</span>
+
+
+	<span class="c1">## combine covariance matrices, neglect cross-covariance between wp, DS</span>
+
+	<span class="n">cov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">block</span><span class="p">([</span>
+					<span class="p">[</span><span class="n">wp_cov</span><span class="p">,</span>				<span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">wp_cov</span><span class="p">)],</span>
+					<span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">wp_cov</span><span class="p">),</span>	<span class="n">ds_cov</span>				 <span class="p">]</span> <span class="p">])</span>
+
+
+	<span class="c1">## compute inverse covariance matrix (de-noise the matrix before, if needed)</span>
+	<span class="c1">## [use the Sherman-Morrison-Woodbury formula to compute the subspace inverse]</span>
+
+	<span class="c1"># threshold = 2.0/np.sqrt(Nmocks)</span>
+	<span class="c1"># U, s, V = scipy.linalg.svd(cov)</span>
+	<span class="c1"># s[s &lt; threshold] = 0.</span>
+	<span class="c1"># sinv = np.zeros_like(s)</span>
+	<span class="c1"># sinv[s &gt;= threshold] = 1.0/s[s &gt;= threshold]</span>
+	<span class="c1"># cov_inv = np.dot(V.T, np.dot(np.diag(sinv), U.T))</span>
+
+	<span class="k">if</span> <span class="n">use_pointmass</span> <span class="o">==</span> <span class="s2">&quot;TRUE&quot;</span><span class="p">:</span>
+		<span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;using point mass term.&quot;</span><span class="p">)</span>
+		<span class="n">point_mass_term</span> <span class="o">=</span> <span class="p">(</span><span class="n">scale_min</span> <span class="o">/</span> <span class="n">rp_vector</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span>
+		<span class="n">point_mass_datavector</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">wp_cov</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">point_mass_term</span><span class="p">])</span>
+		<span class="n">cov_inv</span><span class="p">,</span> <span class="n">lnL_correction</span> <span class="o">=</span> <span class="n">sherman_morrison_singular_inv</span><span class="p">(</span><span class="n">cov</span><span class="p">,</span> <span class="n">point_mass_datavector</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+		<span class="n">cov_inv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">cov_inv</span><span class="p">)</span>
+		
+	<span class="k">else</span><span class="p">:</span>
+		<span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;NOT using point mass term.&quot;</span><span class="p">)</span>
+		<span class="n">cov_inv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">cov</span><span class="p">)</span>	<span class="c1"># don&#39;t modify</span>
+		<span class="n">lnL_correction</span> <span class="o">=</span> <span class="mf">0.</span>	
+
+	<span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">cov_inv_output</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+		<span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">cov_inv_output</span><span class="p">,</span> <span class="n">cov_inv</span><span class="p">)</span>
+	<span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">cov_output</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+		<span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">cov_output</span><span class="p">,</span> <span class="n">cov</span><span class="p">)</span>
+
+
+	<span class="c1">## compute log det(cov) [necessary for normalizing log-likelihood]</span>
+
+	<span class="p">(</span><span class="n">sign</span><span class="p">,</span> <span class="n">logdetcov</span><span class="p">)</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">slogdet</span><span class="p">(</span><span class="n">cov</span><span class="p">)</span>
+
+	<span class="n">Nobs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">mock_datavector</span><span class="p">)</span>
+	<span class="n">lnL_norm_uncorrected</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="n">Nobs</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">-</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">logdetcov</span>
+	<span class="n">lnL_norm</span> <span class="o">=</span> <span class="n">lnL_norm_uncorrected</span> <span class="o">+</span> <span class="n">lnL_correction</span>
+
+	<span class="n">print_mpi</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;log det(cov) = </span><span class="si">{logdetcov}</span><span class="s2">&quot;</span><span class="p">)</span>
+	<span class="n">print_mpi</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;lnL normalization = </span><span class="si">{lnL_norm}</span><span class="s2"> = </span><span class="si">{lnL_norm_uncorrected}</span><span class="s2"> + </span><span class="si">{lnL_correction}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+
+	<span class="c1">## print uncertainties</span>
+
+	<span class="n">wp_err</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">wp_cov</span><span class="p">)</span> <span class="p">)</span> <span class="o">/</span> <span class="n">mock_wp</span><span class="p">[</span><span class="n">scale_mask</span><span class="p">]</span>
+	<span class="n">wp_err_jackknife</span> <span class="o">=</span> <span class="n">mock_wp_err</span><span class="p">[</span><span class="n">scale_mask</span><span class="p">]</span> <span class="o">/</span> <span class="n">mock_wp</span><span class="p">[</span><span class="n">scale_mask</span><span class="p">]</span>
+
+	<span class="n">print_mpi</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;wp fractional error (w/ noise) = </span><span class="si">{wp_err}</span><span class="s2">&quot;</span><span class="p">)</span>
+	<span class="n">print_mpi</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;wp fractional error (jackknife) = </span><span class="si">{wp_err_jackknife}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+	<span class="n">ds_err</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">ds_cov</span><span class="p">)</span> <span class="p">)</span> <span class="o">/</span> <span class="n">mock_ds</span><span class="p">[</span><span class="n">scale_mask</span><span class="p">]</span>
+	<span class="n">ds_err_jackknife</span> <span class="o">=</span> <span class="n">mock_ds_err</span><span class="p">[</span><span class="n">scale_mask</span><span class="p">]</span> <span class="o">/</span> <span class="n">mock_ds</span><span class="p">[</span><span class="n">scale_mask</span><span class="p">]</span>
+
+	<span class="n">print_mpi</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;ds fractional error (w/ noise) = </span><span class="si">{ds_err}</span><span class="s2">&quot;</span><span class="p">)</span>
+	<span class="n">print_mpi</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;ds fractional error (jackknife) = </span><span class="si">{ds_err_jackknife}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+
+	<span class="c1">## fit mock observations with HOD model + wCDM cosmological parameters</span>
+
+	<span class="n">wp_emulate_fun</span><span class="p">,</span> <span class="n">emu_binmin</span><span class="p">,</span> <span class="n">emu_binmax</span> <span class="o">=</span> <span class="n">get_emulate_fun</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">input_wp_emu_filename</span><span class="p">)</span>
+	<span class="k">try</span><span class="p">:</span>
+		<span class="k">assert</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">emu_binmin</span><span class="p">,</span> <span class="n">obs_binmin</span><span class="p">)</span> <span class="p">)</span>
+		<span class="k">assert</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">emu_binmax</span><span class="p">,</span> <span class="n">obs_binmax</span><span class="p">)</span> <span class="p">)</span>
+	<span class="k">except</span><span class="p">:</span>
+		<span class="n">print_mpi</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;emu_binmin = </span><span class="si">{emu_binmin}</span><span class="s2">&quot;</span><span class="p">)</span>
+		<span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+	<span class="n">ds_emulate_fun</span><span class="p">,</span> <span class="n">dsemu_binmin</span><span class="p">,</span> <span class="n">dsemu_binmax</span> <span class="o">=</span> <span class="n">get_emulate_fun</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">input_ds_emu_filename</span><span class="p">)</span>
+	<span class="k">try</span><span class="p">:</span>
+		<span class="k">assert</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">dsemu_binmin</span><span class="p">,</span> <span class="n">obs_binmin</span><span class="p">)</span> <span class="p">)</span>
+		<span class="k">assert</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">dsemu_binmax</span><span class="p">,</span> <span class="n">obs_binmax</span><span class="p">)</span> <span class="p">)</span>
+	<span class="k">except</span><span class="p">:</span>
+		<span class="n">print_mpi</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;dsemu_binmin = </span><span class="si">{dsemu_binmin}</span><span class="s2">&quot;</span><span class="p">)</span>
+		<span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+
+	<span class="k">def</span> <span class="nf">this_halo_model</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="nb">print</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+
+		<span class="n">ngal</span> 	 	 <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+		<span class="n">M0_over_M1</span>	 <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+		<span class="n">M1_over_Mmin</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+		<span class="n">siglogM</span> 	 <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+		<span class="n">alpha</span>		 <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+		<span class="n">A_conc</span>		 <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span>
+		<span class="n">R_rescale</span>	 <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span>
+		<span class="n">f_cen</span>		 <span class="o">=</span> <span class="n">fcen_fiducial</span>
+
+		<span class="n">omega_m</span> 		 <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">7</span><span class="p">]</span>
+		<span class="n">sigma_8</span>			 <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">8</span><span class="p">]</span>
+		<span class="n">H0</span>				 <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">9</span><span class="p">]</span>
+		<span class="n">ns</span>				 <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">10</span><span class="p">]</span>
+		<span class="n">omegab</span>			 <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">11</span><span class="p">]</span>
+		<span class="n">w0</span>				 <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">12</span><span class="p">]</span>
+		<span class="n">redshift</span>		 <span class="o">=</span> <span class="n">redshift_fiducial</span>
+		<span class="n">ds_calibration</span>	 <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">13</span><span class="p">]</span>
+
+		<span class="n">omegac</span> <span class="o">=</span> <span class="n">omega_m</span> <span class="o">-</span> <span class="n">omegab</span>
+		<span class="n">h</span> <span class="o">=</span> <span class="n">H0</span><span class="o">/</span><span class="mf">100.</span>
+		<span class="n">ombh2</span> <span class="o">=</span> <span class="n">omegab</span><span class="o">*</span><span class="n">h</span><span class="o">**</span><span class="mi">2</span>
+		<span class="n">omch2</span> <span class="o">=</span> <span class="n">omegac</span><span class="o">*</span><span class="n">h</span><span class="o">**</span><span class="mi">2</span>
+
+		<span class="k">if</span> <span class="nb">print</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+			<span class="n">print_mpi</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">{ngal*1.0e4:.5f} </span><span class="si">{siglogM:.5f}</span><span class="s2"> &quot;</span> <span class="o">+</span> \
+					  <span class="n">f</span><span class="s2">&quot;</span><span class="si">{M1_over_Mmin:.5f}</span><span class="s2"> </span><span class="si">{M0_over_M1:.5f}</span><span class="s2"> &quot;</span> <span class="o">+</span> \
+					  <span class="n">f</span><span class="s2">&quot;</span><span class="si">{alpha:.5f}</span><span class="s2"> </span><span class="si">{A_conc:.5f}</span><span class="s2"> </span><span class="si">{R_rescale:.5f}</span><span class="s2"> </span><span class="si">{omega_m:.5f}</span><span class="s2"> </span><span class="si">{sigma_8:.5f}</span><span class="s2"> &quot;</span> <span class="o">+</span> \
+					  <span class="n">f</span><span class="s2">&quot;</span><span class="si">{ds_calibration:.2f}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+		<span class="n">this_analytic_wp</span> <span class="o">=</span> <span class="n">compute_analytic_wp</span><span class="p">(</span><span class="n">omega_m</span><span class="p">,</span> <span class="n">omegab</span><span class="p">,</span> <span class="n">H0</span><span class="p">,</span> <span class="n">ns</span><span class="p">,</span>
+											   <span class="n">w0</span><span class="p">,</span> <span class="n">sigma_8</span><span class="p">,</span>
+											   <span class="n">redshift</span><span class="p">,</span>
+											   <span class="n">ngal</span><span class="p">,</span> <span class="n">siglogM</span><span class="p">,</span>
+											   <span class="n">M1_over_Mmin</span><span class="p">,</span> <span class="n">M0_over_M1</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">f_cen</span><span class="p">,</span>
+											   <span class="n">wp_binmin</span><span class="o">=</span><span class="n">obs_binmin</span><span class="p">,</span>
+											   <span class="n">wp_binmax</span><span class="o">=</span><span class="n">obs_binmax</span><span class="p">)</span>
+
+
+		<span class="c1">## compute emulator correction</span>
+
+		<span class="n">input_parameters</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">ngal</span><span class="p">,</span> <span class="n">siglogM</span><span class="p">,</span> <span class="n">M0_over_M1</span><span class="p">,</span> <span class="n">M1_over_Mmin</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span>
+									 <span class="n">A_conc</span><span class="p">,</span> <span class="n">R_rescale</span><span class="p">,</span>
+								 	 <span class="n">sigma_8</span><span class="p">,</span> <span class="n">H0</span><span class="p">,</span> <span class="n">ombh2</span><span class="p">,</span> <span class="n">omch2</span><span class="p">,</span> <span class="n">w0</span><span class="p">,</span> <span class="n">ns</span><span class="p">])</span>
+
+		<span class="n">predicted_wp_ratio_uncorrected</span> <span class="o">=</span> <span class="n">wp_emulate_fun</span><span class="p">(</span><span class="n">input_parameters</span><span class="p">)</span>
+		<span class="n">predicted_ds_uncorrected</span> <span class="o">=</span> <span class="n">ds_emulate_fun</span><span class="p">(</span><span class="n">input_parameters</span><span class="p">)</span>
+
+
+		<span class="c1">## add correction from additional phases</span>
+
+		<span class="n">predicted_wp_norsd</span> <span class="o">=</span> <span class="p">(</span><span class="n">predicted_wp_ratio_uncorrected</span> <span class="o">*</span> <span class="n">this_analytic_wp</span><span class="p">)</span> <span class="o">*</span> <span class="n">wp_correction</span>
+		<span class="n">predicted_ds</span> <span class="o">=</span> <span class="n">predicted_ds_uncorrected</span> <span class="o">*</span> <span class="n">ds_correction</span>
+
+		<span class="n">this_wp</span> <span class="o">=</span> <span class="p">(</span><span class="n">predicted_wp_norsd</span> <span class="o">*</span> <span class="n">rsd_correction</span><span class="p">)</span>
+		<span class="n">this_ds</span> <span class="o">=</span> <span class="p">(</span><span class="n">predicted_ds</span><span class="p">)</span> <span class="o">*</span> <span class="n">ds_calibration</span>
+		
+<span class="c1">#		if print:</span>
+<span class="c1">#			print_mpi(f&quot;\temu wp ratio = {predicted_wp_ratio_uncorrected}&quot;)</span>
+<span class="c1">#			print_mpi(f&quot;\tanalytic wp = {this_analytic_wp}&quot;)</span>
+<span class="c1">#			print_mpi(f&quot;\twp_correction = {wp_correction}&quot;)</span>
+<span class="c1">#			print_mpi(f&quot;\twp = {this_wp}&quot;)</span>
+<span class="c1">#			print_mpi(f&quot;&quot;)</span>
+
+		<span class="k">return</span> <span class="n">this_wp</span><span class="p">,</span> <span class="n">this_ds</span>
+
+
+	<span class="c1">## params: ngal, M0_over_M1, M1_over_Mmin, siglogM, alpha, A_conc, R_rescale</span>
+	<span class="c1">##		   omega_m, sigma_8, H0, ns, omegab, w0</span>
+
+	<span class="n">params_guess</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">ngal_fiducial</span><span class="p">,</span>
+							 <span class="n">M0_ratio_fiducial</span><span class="p">,</span>
+							 <span class="n">M1_ratio_fiducial</span><span class="p">,</span>
+							 <span class="n">siglogM_fiducial</span><span class="p">,</span>
+							 <span class="n">alpha_fiducial</span><span class="p">,</span>
+							 <span class="n">Aconc_fiducial</span><span class="p">,</span>
+							 <span class="n">Rrescale_fiducial</span><span class="p">,</span>
+							 <span class="n">omegam_fiducial</span><span class="p">,</span>
+							 <span class="n">sigma8_fiducial</span><span class="p">,</span>
+							 <span class="n">H0_fiducial</span><span class="p">,</span>
+							 <span class="n">ns_fiducial</span><span class="p">,</span>
+							 <span class="n">omegab_fiducial</span><span class="p">,</span>
+							 <span class="n">w0_fiducial</span><span class="p">,</span>
+							 <span class="n">ds_calibration_fiducial</span><span class="p">])</span>
+
+	<span class="n">params_min</span>   <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">ngal_min</span><span class="p">,</span>
+							 <span class="n">M0_ratio_min</span><span class="p">,</span>
+							 <span class="n">M1_ratio_min</span><span class="p">,</span>
+							 <span class="n">siglogM_min</span><span class="p">,</span>
+							 <span class="n">alpha_min</span><span class="p">,</span>
+							 <span class="n">Aconc_min</span><span class="p">,</span>
+							 <span class="n">Rrescale_min</span><span class="p">,</span>
+							 <span class="n">omegam_min</span><span class="p">,</span>
+							 <span class="n">sigma8_min</span><span class="p">,</span>
+							 <span class="n">H0_min</span><span class="p">,</span>
+							 <span class="n">ns_min</span><span class="p">,</span>
+							 <span class="n">omegab_min</span><span class="p">,</span>
+							 <span class="n">w0_min</span><span class="p">,</span>
+							 <span class="n">ds_calibration_min</span><span class="p">])</span>
+
+	<span class="n">params_max</span>   <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">ngal_max</span><span class="p">,</span>
+							 <span class="n">M0_ratio_max</span><span class="p">,</span>
+							 <span class="n">M1_ratio_max</span><span class="p">,</span>
+							 <span class="n">siglogM_max</span><span class="p">,</span>
+							 <span class="n">alpha_max</span><span class="p">,</span>
+							 <span class="n">Aconc_max</span><span class="p">,</span>
+							 <span class="n">Rrescale_max</span><span class="p">,</span>
+							 <span class="n">omegam_max</span><span class="p">,</span>
+							 <span class="n">sigma8_max</span><span class="p">,</span>
+							 <span class="n">H0_max</span><span class="p">,</span>
+							 <span class="n">ns_max</span><span class="p">,</span>
+							 <span class="n">omegab_max</span><span class="p">,</span>
+							 <span class="n">w0_max</span><span class="p">,</span>
+							 <span class="n">ds_calibration_max</span><span class="p">])</span>
+
+
+	<span class="k">def</span> <span class="nf">ln_L</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">disable_boundscheck</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="nb">print</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+
+		<span class="k">if</span> <span class="n">disable_boundscheck</span> <span class="o">==</span> <span class="kc">True</span> \
+			<span class="ow">or</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">params</span> <span class="o">&gt;=</span> <span class="n">params_min</span><span class="p">)</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">params</span> <span class="o">&lt;=</span> <span class="n">params_max</span><span class="p">)):</span>
+
+			<span class="n">this_wp</span><span class="p">,</span> <span class="n">this_ds</span> <span class="o">=</span> <span class="n">this_halo_model</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="nb">print</span><span class="o">=</span><span class="nb">print</span><span class="p">)</span>
+			<span class="n">this_datavector</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">this_wp</span><span class="p">[</span><span class="n">scale_mask</span><span class="p">],</span> <span class="n">this_ds</span><span class="p">[</span><span class="n">scale_mask</span><span class="p">]])</span>
+			<span class="n">dy</span> <span class="o">=</span> <span class="p">(</span><span class="n">this_datavector</span> <span class="o">-</span> <span class="n">mock_datavector</span><span class="p">)</span>
+
+			<span class="n">chisq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">dy</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">cov_inv</span><span class="p">,</span> <span class="n">dy</span><span class="p">))</span>
+			<span class="n">log_likelihood</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="n">chisq</span> <span class="o">+</span> <span class="n">lnL_norm</span>
+
+			<span class="n">blob</span> <span class="o">=</span> <span class="p">(</span><span class="n">this_wp</span><span class="p">,</span> <span class="n">this_ds</span><span class="p">,</span> <span class="n">chisq</span><span class="p">)</span>	 <span class="c1"># save the posterior predictive distribution</span>
+			<span class="k">return</span> <span class="n">log_likelihood</span><span class="p">,</span> <span class="n">blob</span>
+
+		<span class="k">else</span><span class="p">:</span>
+
+			<span class="k">return</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="kc">None</span>
+
+
+	<span class="n">param_range</span> <span class="o">=</span> <span class="n">params_max</span> <span class="o">-</span> <span class="n">params_min</span>
+	<span class="n">fixed_params</span> <span class="o">=</span> <span class="p">(</span><span class="n">param_range</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">)</span>
+	<span class="n">param_range</span><span class="p">[</span><span class="n">fixed_params</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+	<span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">grad</span><span class="p">):</span>
+		<span class="n">params</span> <span class="o">=</span> <span class="n">params_guess</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+		<span class="n">params</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="n">fixed_params</span><span class="p">)]</span> <span class="o">=</span> <span class="n">x</span>
+		<span class="n">log_likelihood</span><span class="p">,</span> <span class="n">blob</span> <span class="o">=</span> <span class="n">ln_L</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="nb">print</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+		<span class="k">return</span> <span class="n">log_likelihood</span><span class="o">*</span><span class="p">(</span><span class="o">-</span><span class="mf">1.0</span><span class="p">)</span>
+
+	<span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+		<span class="n">unitized</span> <span class="o">=</span> <span class="p">(</span><span class="n">params</span> <span class="o">-</span> <span class="n">params_min</span><span class="p">)</span> <span class="o">/</span> <span class="n">param_range</span>
+		<span class="n">unitized</span><span class="p">[</span><span class="n">fixed_params</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.</span>
+		<span class="k">return</span> <span class="n">unitized</span>
+
+	<span class="k">def</span> <span class="nf">untransform</span><span class="p">(</span><span class="n">unitized</span><span class="p">):</span>
+		<span class="n">params</span> <span class="o">=</span> <span class="n">unitized</span><span class="o">*</span><span class="n">param_range</span> <span class="o">+</span> <span class="n">params_min</span>
+		<span class="n">params</span><span class="p">[</span><span class="n">fixed_params</span><span class="p">]</span> <span class="o">=</span> <span class="n">params_min</span><span class="p">[</span><span class="n">fixed_params</span><span class="p">]</span>
+		<span class="k">return</span> <span class="n">params</span>
+
+	<span class="n">Nobs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">mock_datavector</span><span class="p">)</span>
+	<span class="n">Nparams_fitted</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="o">~</span><span class="n">fixed_params</span><span class="p">)</span>
+	<span class="n">dof</span> <span class="o">=</span> <span class="n">Nobs</span> <span class="o">-</span> <span class="n">Nparams_fitted</span>
+	<span class="n">print_mpi</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;dof = </span><span class="si">{dof}</span><span class="s2"> (</span><span class="si">{Nobs}</span><span class="s2"> observations for </span><span class="si">{Nparams_fitted}</span><span class="s2"> fitted parameters)&quot;</span><span class="p">)</span>
+
+
+	<span class="k">if</span> <span class="ow">not</span> <span class="n">Path</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">fit_param_file</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+
+		<span class="n">print_mpi</span><span class="p">(</span><span class="s2">&quot;fitting wp...&quot;</span><span class="p">)</span>
+	
+		<span class="n">opt</span> <span class="o">=</span> <span class="n">nlopt</span><span class="o">.</span><span class="n">opt</span><span class="p">(</span><span class="n">nlopt</span><span class="o">.</span><span class="n">LN_BOBYQA</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="n">fixed_params</span><span class="p">)))</span>
+		<span class="n">opt</span><span class="o">.</span><span class="n">set_min_objective</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+		<span class="n">opt</span><span class="o">.</span><span class="n">set_xtol_rel</span><span class="p">(</span><span class="mf">1e-3</span><span class="p">)</span>
+		<span class="n">opt</span><span class="o">.</span><span class="n">set_ftol_rel</span><span class="p">(</span><span class="mf">1e-4</span><span class="p">)</span>
+		<span class="n">opt</span><span class="o">.</span><span class="n">set_lower_bounds</span><span class="p">(</span><span class="n">params_min</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="n">fixed_params</span><span class="p">)])</span>
+		<span class="n">opt</span><span class="o">.</span><span class="n">set_upper_bounds</span><span class="p">(</span><span class="n">params_max</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="n">fixed_params</span><span class="p">)])</span>
+		<span class="n">best_fit_params</span> <span class="o">=</span> <span class="n">opt</span><span class="o">.</span><span class="n">optimize</span><span class="p">(</span><span class="n">params_guess</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="n">fixed_params</span><span class="p">)])</span>
+		
+		<span class="n">maximum_likelihood_params</span> <span class="o">=</span> <span class="n">params_guess</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+		<span class="n">maximum_likelihood_params</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="n">fixed_params</span><span class="p">)]</span> <span class="o">=</span> <span class="n">best_fit_params</span>
+	
+		<span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;best fit params: </span><span class="si">{best_fit_params}</span><span class="s2">&quot;</span><span class="p">)</span>
+		
+
+		<span class="c1">## output best-fit parameters to file</span>
+
+		<span class="n">config</span> <span class="o">=</span> <span class="n">configparser</span><span class="o">.</span><span class="n">ConfigParser</span><span class="p">()</span>
+		<span class="n">config</span><span class="p">[</span><span class="s1">&#39;params&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+		<span class="n">params</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;params&#39;</span><span class="p">]</span>
+
+		<span class="n">params</span><span class="p">[</span><span class="s1">&#39;ngal&#39;</span><span class="p">]</span> 	 	   <span class="o">=</span> <span class="nb">str</span><span class="p">(</span> <span class="n">maximum_likelihood_params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="p">)</span>
+		<span class="n">params</span><span class="p">[</span><span class="s1">&#39;M0_over_M1&#39;</span><span class="p">]</span>   <span class="o">=</span> <span class="nb">str</span><span class="p">(</span> <span class="n">maximum_likelihood_params</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="p">)</span>
+		<span class="n">params</span><span class="p">[</span><span class="s1">&#39;M1_over_Mmin&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span> <span class="n">maximum_likelihood_params</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="p">)</span>
+		<span class="n">params</span><span class="p">[</span><span class="s1">&#39;siglogM&#39;</span><span class="p">]</span> 	   <span class="o">=</span> <span class="nb">str</span><span class="p">(</span> <span class="n">maximum_likelihood_params</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="p">)</span>
+		<span class="n">params</span><span class="p">[</span><span class="s1">&#39;alpha&#39;</span><span class="p">]</span>		   <span class="o">=</span> <span class="nb">str</span><span class="p">(</span> <span class="n">maximum_likelihood_params</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="p">)</span>
+		<span class="n">params</span><span class="p">[</span><span class="s1">&#39;A_conc&#39;</span><span class="p">]</span>	   <span class="o">=</span> <span class="nb">str</span><span class="p">(</span> <span class="n">maximum_likelihood_params</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="p">)</span>
+		<span class="n">params</span><span class="p">[</span><span class="s1">&#39;R_rescale&#39;</span><span class="p">]</span>	   <span class="o">=</span> <span class="nb">str</span><span class="p">(</span> <span class="n">maximum_likelihood_params</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span> <span class="p">)</span>
+		<span class="n">params</span><span class="p">[</span><span class="s1">&#39;f_cen&#39;</span><span class="p">]</span>		   <span class="o">=</span> <span class="nb">str</span><span class="p">(</span> <span class="n">fcen_fiducial</span> <span class="p">)</span>
+
+		<span class="n">params</span><span class="p">[</span><span class="s1">&#39;omega_m&#39;</span><span class="p">]</span> 	 <span class="o">=</span> <span class="nb">str</span><span class="p">(</span> <span class="n">maximum_likelihood_params</span><span class="p">[</span><span class="mi">7</span><span class="p">]</span> <span class="p">)</span>
+		<span class="n">params</span><span class="p">[</span><span class="s1">&#39;sigma_8&#39;</span><span class="p">]</span>	 <span class="o">=</span> <span class="nb">str</span><span class="p">(</span> <span class="n">maximum_likelihood_params</span><span class="p">[</span><span class="mi">8</span><span class="p">]</span> <span class="p">)</span>
+		<span class="n">params</span><span class="p">[</span><span class="s1">&#39;H0&#39;</span><span class="p">]</span>		 <span class="o">=</span> <span class="nb">str</span><span class="p">(</span> <span class="n">maximum_likelihood_params</span><span class="p">[</span><span class="mi">9</span><span class="p">]</span> <span class="p">)</span>
+		<span class="n">params</span><span class="p">[</span><span class="s1">&#39;ns&#39;</span><span class="p">]</span>		 <span class="o">=</span> <span class="nb">str</span><span class="p">(</span> <span class="n">maximum_likelihood_params</span><span class="p">[</span><span class="mi">10</span><span class="p">]</span> <span class="p">)</span>
+		<span class="n">params</span><span class="p">[</span><span class="s1">&#39;omega_b&#39;</span><span class="p">]</span>	 <span class="o">=</span> <span class="nb">str</span><span class="p">(</span> <span class="n">maximum_likelihood_params</span><span class="p">[</span><span class="mi">11</span><span class="p">]</span> <span class="p">)</span>
+		<span class="n">params</span><span class="p">[</span><span class="s1">&#39;w0&#39;</span><span class="p">]</span>		 <span class="o">=</span> <span class="nb">str</span><span class="p">(</span> <span class="n">maximum_likelihood_params</span><span class="p">[</span><span class="mi">12</span><span class="p">]</span> <span class="p">)</span>
+		<span class="n">params</span><span class="p">[</span><span class="s1">&#39;redshift&#39;</span><span class="p">]</span>	 <span class="o">=</span> <span class="nb">str</span><span class="p">(</span> <span class="n">redshift_fiducial</span> <span class="p">)</span>
+		<span class="n">params</span><span class="p">[</span><span class="s1">&#39;ds_calibration&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span> <span class="n">maximum_likelihood_params</span><span class="p">[</span><span class="mi">13</span><span class="p">]</span> <span class="p">)</span>
+
+		<span class="k">def</span> <span class="nf">write_config</span><span class="p">():</span>
+			<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">fit_param_file</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">configfile</span><span class="p">:</span>
+				<span class="n">config</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">configfile</span><span class="p">)</span>
+
+		<span class="n">exec_mpi</span><span class="p">(</span><span class="n">write_config</span><span class="p">)</span>
+		<span class="n">print_mpi</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Wrote best-fit parameters to: </span><span class="si">{args.fit_param_file}</span><span class="s2">.&quot;</span><span class="p">)</span>
+
+	<span class="k">else</span><span class="p">:</span>
+
+		<span class="c1">## read best-fit parameters</span>
+
+		<span class="n">print_mpi</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;reading best-fit parameters from: </span><span class="si">{args.fit_param_file}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+		<span class="n">config</span> <span class="o">=</span> <span class="n">configparser</span><span class="o">.</span><span class="n">ConfigParser</span><span class="p">()</span>
+		<span class="n">config</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">fit_param_file</span><span class="p">)</span>
+		<span class="n">params</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;params&#39;</span><span class="p">]</span>
+
+		<span class="n">maximum_likelihood_params</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">params_guess</span><span class="p">)</span>
+		<span class="n">maximum_likelihood_params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;ngal&#39;</span><span class="p">])</span>
+		<span class="n">maximum_likelihood_params</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;M0_over_M1&#39;</span><span class="p">])</span>
+		<span class="n">maximum_likelihood_params</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;M1_over_Mmin&#39;</span><span class="p">])</span>
+		<span class="n">maximum_likelihood_params</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;siglogM&#39;</span><span class="p">])</span>
+		<span class="n">maximum_likelihood_params</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;alpha&#39;</span><span class="p">])</span>
+		<span class="n">maximum_likelihood_params</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;A_conc&#39;</span><span class="p">])</span>
+		<span class="n">maximum_likelihood_params</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;R_rescale&#39;</span><span class="p">])</span>
+		<span class="n">maximum_likelihood_params</span><span class="p">[</span><span class="mi">7</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;omega_m&#39;</span><span class="p">])</span>
+		<span class="n">maximum_likelihood_params</span><span class="p">[</span><span class="mi">8</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;sigma_8&#39;</span><span class="p">])</span>
+		<span class="n">maximum_likelihood_params</span><span class="p">[</span><span class="mi">9</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;H0&#39;</span><span class="p">])</span>
+		<span class="n">maximum_likelihood_params</span><span class="p">[</span><span class="mi">10</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;ns&#39;</span><span class="p">])</span>
+		<span class="n">maximum_likelihood_params</span><span class="p">[</span><span class="mi">11</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;omega_b&#39;</span><span class="p">])</span>
+		<span class="n">maximum_likelihood_params</span><span class="p">[</span><span class="mi">12</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;w0&#39;</span><span class="p">])</span>
+		<span class="n">maximum_likelihood_params</span><span class="p">[</span><span class="mi">13</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;ds_calibration&#39;</span><span class="p">])</span>
+
+
+	<span class="c1">## compute best-fit diagnostics</span>
+
+	<span class="n">log_likelihood</span><span class="p">,</span> <span class="p">(</span><span class="n">fit_wp</span><span class="p">,</span> <span class="n">fit_ds</span><span class="p">,</span> <span class="n">fit_chisq</span><span class="p">)</span> <span class="o">=</span> <span class="n">ln_L</span><span class="p">(</span><span class="n">maximum_likelihood_params</span><span class="p">)</span>
+	<span class="n">chisq_dof</span> <span class="o">=</span> <span class="n">fit_chisq</span> <span class="o">/</span> <span class="n">dof</span>
+
+	<span class="n">print_mpi</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+	<span class="n">print_mpi</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;best-fit log likelihood: </span><span class="si">{log_likelihood:.5f}</span><span class="s2">&quot;</span><span class="p">)</span>
+	<span class="n">print_mpi</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;best-fit chi^2 = </span><span class="si">{fit_chisq:.5f}</span><span class="s2"> on </span><span class="si">{dof}</span><span class="s2"> d.o.f = </span><span class="si">{chisq_dof:.5f}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+	<span class="n">chisq_pvalue</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">mpmath</span><span class="o">.</span><span class="n">gammainc</span><span class="p">(</span><span class="n">dof</span><span class="o">/</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="n">fit_chisq</span><span class="o">/</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">regularized</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+
+	<span class="n">print_mpi</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">p-value = </span><span class="si">{chisq_pvalue:.5f}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+	<span class="n">savetxt_mpi</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">fit_wp_file</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">c_</span><span class="p">[</span><span class="n">obs_binmin</span><span class="p">,</span> <span class="n">obs_binmax</span><span class="p">,</span>
+										<span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">fit_wp</span><span class="p">),</span> <span class="n">fit_wp</span><span class="p">])</span>
+	<span class="n">savetxt_mpi</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">fit_ds_file</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">c_</span><span class="p">[</span><span class="n">obs_binmin</span><span class="p">,</span> <span class="n">obs_binmax</span><span class="p">,</span>
+										<span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">fit_ds</span><span class="p">),</span> <span class="n">fit_ds</span><span class="p">])</span>
+
+	<span class="n">print_mpi</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Wrote best-fit wp model to: </span><span class="si">{args.fit_wp_file}</span><span class="s2">&quot;</span><span class="p">)</span>
+	<span class="n">print_mpi</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Wrote best-fit DS model to: </span><span class="si">{args.fit_ds_file}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+
+	<span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">multinest</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+		<span class="c1">## run MultiNest (use `mpiexec -n 4 python ...` to run with MPI)</span>
+
+		<span class="kn">import</span> <span class="nn">pymultinest</span>
+		
+		<span class="k">assert</span> <span class="p">(</span><span class="n">ds_calibration_prior_sigma</span> <span class="o">&gt;=</span> <span class="mf">0.0</span><span class="p">)</span>
+		<span class="n">ds_calibration_prior</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="n">ds_calibration_prior_sigma</span><span class="p">)</span>
+
+		<span class="k">def</span> <span class="nf">prior_multinest</span><span class="p">(</span><span class="n">cube</span><span class="p">,</span> <span class="n">ndim</span><span class="p">,</span> <span class="n">nparams</span><span class="p">):</span>
+
+			<span class="sd">&quot;&quot;&quot;map unit cube to prior of the problem space.&quot;&quot;&quot;</span>
+
+			<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ndim</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+				<span class="n">cube</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">cube</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="n">params_max</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">params_min</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">+</span> <span class="n">params_min</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+			<span class="k">if</span> <span class="n">ds_calibration_prior_sigma</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">:</span>
+				<span class="n">cube</span><span class="p">[</span><span class="n">ndim</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">ds_calibration_prior</span><span class="o">.</span><span class="n">ppf</span><span class="p">(</span><span class="n">cube</span><span class="p">[</span><span class="n">ndim</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+			<span class="k">else</span><span class="p">:</span>
+				<span class="n">cube</span><span class="p">[</span><span class="n">ndim</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+		<span class="k">def</span> <span class="nf">lnL_multinest</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">ndim</span><span class="p">,</span> <span class="n">nparams</span><span class="p">):</span>
+
+			<span class="sd">&quot;&quot;&quot;return log likelihood at params &#39;params&#39;.&quot;&quot;&quot;</span>
+
+			<span class="n">real_params</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">ndim</span><span class="p">]</span>
+			<span class="n">loglike</span><span class="p">,</span> <span class="p">(</span><span class="n">wp</span><span class="p">,</span> <span class="n">ds</span><span class="p">,</span> <span class="n">chisq</span><span class="p">)</span> <span class="o">=</span> <span class="n">ln_L</span><span class="p">(</span><span class="n">real_params</span><span class="p">,</span> <span class="n">disable_boundscheck</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+			<span class="c1">## save posterior predictive distribution (PPD)</span>
+
+			<span class="n">params</span><span class="p">[</span><span class="n">nparams</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">chisq</span>
+
+			<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">wp</span><span class="p">)):</span>
+				<span class="n">params</span><span class="p">[</span><span class="n">ndim</span><span class="o">+</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">wp</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+			<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ds</span><span class="p">)):</span>
+				<span class="n">params</span><span class="p">[</span><span class="n">ndim</span><span class="o">+</span><span class="nb">len</span><span class="p">(</span><span class="n">wp</span><span class="p">)</span><span class="o">+</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+			<span class="k">return</span> <span class="n">loglike</span>
+
+
+		<span class="n">ndims</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">params_min</span><span class="p">)</span>
+		<span class="n">nparams</span> <span class="o">=</span> <span class="n">ndims</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">mock_wp</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">mock_ds</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+
+		<span class="n">pymultinest</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">lnL_multinest</span><span class="p">,</span> <span class="n">prior_multinest</span><span class="p">,</span> <span class="n">ndims</span><span class="p">,</span>
+						<span class="n">n_params</span> <span class="o">=</span> <span class="n">nparams</span><span class="p">,</span>
+						<span class="n">n_iter_before_update</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+						<span class="n">importance_nested_sampling</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+						<span class="n">n_live_points</span><span class="o">=</span><span class="mi">800</span><span class="p">,</span>
+						<span class="n">sampling_efficiency</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>
+						<span class="n">outputfiles_basename</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">multinest</span> <span class="o">+</span> <span class="s1">&#39;/1-&#39;</span><span class="p">,</span>
+						<span class="n">resume</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+						<span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+	<span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">mcmc</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+
+		<span class="c1">## run Markov Chain Monte Carlo, initialized at ML parameters</span>
+
+		<span class="kn">import</span> <span class="nn">emcee</span>
+		<span class="n">nwalkers</span> <span class="o">=</span> <span class="mi">400</span>
+		<span class="n">ndim</span> <span class="o">=</span> <span class="n">maximum_likelihood_params</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+		<span class="n">p0</span> <span class="o">=</span> <span class="p">[</span><span class="n">untransform</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="n">transform</span><span class="p">(</span><span class="n">maximum_likelihood_params</span><span class="p">),</span> \
+				<span class="n">scale</span><span class="o">=</span><span class="mf">0.05</span><span class="p">))</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nwalkers</span><span class="p">)]</span>
+
+		<span class="n">sampler</span> <span class="o">=</span> <span class="n">emcee</span><span class="o">.</span><span class="n">EnsembleSampler</span><span class="p">(</span><span class="n">nwalkers</span><span class="p">,</span> <span class="n">ndim</span><span class="p">,</span> <span class="n">ln_L</span><span class="p">,</span> <span class="n">threads</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+
+
+		<span class="c1">## initialize file to save the posterior predictive distribution (PPD)</span>
+
+		<span class="n">ppdf</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">mcmc_ppd</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">libver</span><span class="o">=</span><span class="s1">&#39;latest&#39;</span><span class="p">)</span>
+
+		<span class="n">empty_ln_l</span><span class="p">,</span> <span class="n">empty_blob</span> <span class="o">=</span> <span class="n">ln_L</span><span class="p">(</span><span class="n">maximum_likelihood_params</span><span class="p">)</span> <span class="c1"># get dtypes automatically</span>
+		<span class="n">empty_wp</span><span class="p">,</span> <span class="n">empty_chisq</span> <span class="o">=</span> <span class="n">empty_blob</span>
+
+		<span class="k">def</span> <span class="nf">create_dataset</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">init_data</span><span class="p">):</span>
+			<span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">init_data</span><span class="p">,])</span>
+			<span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isscalar</span><span class="p">(</span><span class="n">init_data</span><span class="p">):</span>
+				<span class="n">chunksize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="n">init_data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+				<span class="n">maxshape</span> <span class="o">=</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">init_data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+			<span class="k">else</span><span class="p">:</span>
+				<span class="n">chunksize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">100</span><span class="p">,)</span>
+				<span class="n">maxshape</span> <span class="o">=</span> <span class="p">(</span><span class="kc">None</span><span class="p">,)</span>
+			<span class="k">return</span> <span class="n">ppdf</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">chunks</span><span class="o">=</span><span class="n">chunksize</span><span class="p">,</span> <span class="n">maxshape</span><span class="o">=</span><span class="n">maxshape</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+
+		<span class="n">wp_dset</span> <span class="o">=</span> <span class="n">create_dataset</span><span class="p">(</span><span class="s2">&quot;wp&quot;</span><span class="p">,</span> <span class="n">empty_wp</span><span class="p">)</span>
+		<span class="n">lnL_dset</span> <span class="o">=</span> <span class="n">create_dataset</span><span class="p">(</span><span class="s2">&quot;lnL&quot;</span><span class="p">,</span> <span class="n">empty_ln_l</span><span class="p">)</span>
+
+		<span class="n">ppdf</span><span class="o">.</span><span class="n">swmr_mode</span> <span class="o">=</span> <span class="kc">True</span>
+
+		<span class="k">def</span> <span class="nf">append_dataset</span><span class="p">(</span><span class="n">dset</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+			<span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isscalar</span><span class="p">(</span><span class="n">item</span><span class="p">):</span>
+				<span class="n">new_shape</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dset</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,)</span>
+			<span class="k">else</span><span class="p">:</span>
+				<span class="n">new_shape</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dset</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">item</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+			<span class="n">dset</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">new_shape</span><span class="p">)</span>
+			<span class="n">dset</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">item</span>
+
+		<span class="k">def</span> <span class="nf">flush_datasets</span><span class="p">():</span>
+			<span class="n">wp_dset</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+			<span class="n">lnL_dset</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+
+
+		<span class="c1">## run Markov chain sampler</span>
+
+		<span class="k">for</span> <span class="n">position</span><span class="p">,</span> <span class="n">lnprob</span><span class="p">,</span> <span class="n">rngstate</span><span class="p">,</span> <span class="n">blobs</span> <span class="ow">in</span> <span class="n">sampler</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">p0</span><span class="p">,</span>
+																<span class="n">iterations</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span>
+																<span class="n">storechain</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+
+			<span class="n">print_mpi</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;writing to </span><span class="si">{args.mcmc_chain}</span><span class="s2">...&quot;</span><span class="p">)</span>
+			<span class="n">print_mpi</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;writing to </span><span class="si">{args.mcmc_ppd}</span><span class="s2">...&quot;</span><span class="p">)</span>
+
+			<span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">mcmc_chain</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">)</span>
+			<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">position</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+				<span class="n">this_blob</span> <span class="o">=</span> <span class="n">blobs</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+				<span class="n">this_lnL</span> <span class="o">=</span> <span class="n">lnprob</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+
+				<span class="k">if</span> <span class="n">this_blob</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>		<span class="c1"># out of bounds if == None</span>
+					<span class="n">this_wp</span><span class="p">,</span> <span class="n">this_chisq</span> <span class="o">=</span> <span class="n">this_blob</span>
+					<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> </span><span class="si">{}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span><span class="n">position</span><span class="p">[</span><span class="n">k</span><span class="p">]))))</span>
+					<span class="n">append_dataset</span><span class="p">(</span><span class="n">wp_dset</span><span class="p">,</span> <span class="n">this_wp</span><span class="p">)</span>
+					<span class="n">append_dataset</span><span class="p">(</span><span class="n">lnL_dset</span><span class="p">,</span> <span class="n">this_lnL</span><span class="p">)</span>
+					<span class="n">flush_datasets</span><span class="p">()</span>
+
+			<span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+		<span class="n">ppdf</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+		<span class="n">print_mpi</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;finished running Markov chain.&quot;</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Ben Wibking
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
