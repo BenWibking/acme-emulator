@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import numpy as np
+import numpy.linalg
 import inspect
 import argparse
 import configparser
@@ -12,8 +14,6 @@ from numba import jit
 from pathlib import Path
 
 from math import exp, sqrt, log
-import numpy as np
-import numpy.linalg
 
 
 @jit
@@ -677,51 +677,6 @@ def fit_data(sims_dir, redshift_dir, param_files, kernel,
 			simfold_err_vectors[j, mask] = (y_model_holdout - y_k_holdout)
 			norm_simfold_cv += np.mean((y_model_holdout - y_k_holdout)**2) / simfolds
 
-
-		## at fixed hyperparameters, compute k-fold cross-validation
-		
-#		norm_kfold_cv = 0.
-#		kfolds = 5
-		
-#		for k in range(kfolds):
-#		
-#			## select fold k of data
-#
-#			Nobs = X.shape[0]
-#			mask = np.zeros(Nobs,dtype=bool)
-#			chunk_size = (Nobs // kfolds)
-#			idx_min = chunk_size*k
-#			
-#			if k == kfolds-1:
-#				idx_max = Nobs
-#			else:
-#				idx_max = chunk_size*(k+1)
-#				
-#			mask[idx_min:idx_max] = True
-#			X_k_input   	= X[~mask,:]
-#			y_k_input   	= y[~mask]
-#			yerr_k_input	= yerr[~mask]
-#			X_k_holdout 	= X[mask,:]
-#			y_k_holdout 	= y[mask]
-#			yerr_k_holdout  = yerr[mask]
-#
-#			## fit model (using fixed hyperparameters)
-#			
-#			K_k = compute_kernel(X_k_input, best_h, generic_kernel)
-#			Y_k = np.matrix((y_k_input - y0)/sigma_y).T
-#			Yerr_k = np.matrix(yerr_k_input/sigma_y).T
-#			
-#			c_k, rms_LOOE_norm_k, logp_k, err_vec_k = \
-#									fit_data_with_kernel(Y_k,K_k,Yerr_k,best_lambda)
-#			y_model_holdout = y0 + sigma_y*model_data(X_k_input, X_k_holdout,
-#													  c_k, best_h, generic_kernel)
-#			norm_kfold_cv += np.mean((y_model_holdout - y_k_holdout)**2) / kfolds
-#
-#
-#		rms_kfold_cv = np.sqrt(norm_kfold_cv)
-#		rms_kfold[j] = rms_kfold_cv
-#		frac_rms_kfold[j] = rms_kfold_cv / y_mean[j]
-
 		rms_simfold_cv = np.sqrt(norm_simfold_cv)
 		rms_simfold[j] = rms_simfold_cv
 		frac_rms_simfold[j] = rms_simfold_cv / y_mean[j]
@@ -765,7 +720,6 @@ def fit_data(sims_dir, redshift_dir, param_files, kernel,
 		f.create_dataset("rms_loo_cv_err", data=rms_looe)
 		f.create_dataset("rms_simfold_cv_err", data=rms_simfold)
 		f.create_dataset("rms_residuals", data=rms_residuals)
-#		f.create_dataset("rms_kfold_cv_err", data=rms_kfold)
 		
 		f.create_dataset("gp_kernel_hyperparameters", data=np.asarray(kernel_hypers))
 		f.create_dataset("gp_kernel_name", data=kernel)
@@ -777,13 +731,13 @@ if __name__ == '__main__':
 
 	parser = argparse.ArgumentParser()
 	
-	parser.add_argument('output_emu_filename')
-	parser.add_argument('sims_dir')
-	parser.add_argument('redshift_dir')
+	parser.add_argument('--output_emu_filename', default='lowz_emu_wpratio.hdf5')
+	parser.add_argument('--sims_dir', default='./AbacusCosmos/AbacusCosmos_720box/Rockstar')
+	parser.add_argument('--redshift_dir', default='z0.300')
 	parser.add_argument('param_files', nargs='*')
 	
-	parser.add_argument('--kernel', default='sqrexp', required=True)
-	parser.add_argument('--obs_ext', default=None, required=True)
+	parser.add_argument('--kernel', default='sqrexp')
+	parser.add_argument('--obs_ext', default='.ratio_wp.txt')
 	
 	parser.add_argument('--load-scalar', default=False, action='store_true')
 

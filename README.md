@@ -5,12 +5,8 @@
 
 Clone this git repository. It is recommended to create a new virtual environment for ACME (Python 3.7+ is *required* for using ACME). Then install all required Python packages as such:
 ```
-conda create -n acme python=3.7
+conda create -n acme -f acme.yaml
 conda activate acme
-conda install pycurl
-conda install gsl
-conda install hdf5
-pip install -r requirements.txt
 ```
 
 You will need to compile cHOD and fastcorrelation as such:
@@ -59,9 +55,9 @@ If you are reproducing the training data used in Wibking+ (2019), this step may 
 
 ### Training the emulator
 
-The emulator can be trained by
+The emulator for projected galaxy clustering ($w_p$) can be trained by
 ```
-python Analysis/fit_data.py
+python Analysis/train_emu.py Params/LOWZ_HOD/NHOD_lowz.*.seed_42.template_param
 ```
 
 For approximately 400 training points, this will take 30 seconds to 5 minutes per correlation function bin, depending on your CPU speed and whether you modify the optimization parameters.

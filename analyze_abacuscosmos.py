@@ -442,7 +442,8 @@ def task_compute_wp_ratio():
 	for param_file in param_files:
 	
 		correlation_file = txt_average_xi_gg_this_param(param_file)	
-		
+
+		## need to fix this -- only runs if doit is re-run a second time
 		if Path(correlation_file).exists():
 
 			sim_wp_file = txt_average_wp_this_param(param_file)
@@ -454,9 +455,6 @@ def task_compute_wp_ratio():
 			output_wp_file = txt_analytic_wp_this_param(param_file)
 			output_wp_ratio_file = txt_ratio_wp_this_param(param_file)
 			
-#			sim_ds_file = 
-#			output_ds_ratio_file = 
-	
 			subdir = subdir_from_param_file(param_file)
 			header_file = header_file_this_sim(subdir)
 			
