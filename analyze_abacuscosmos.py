@@ -77,31 +77,31 @@ def task_compute_mass_functions():
 		}
 
 
-def task_compute_matter_autocorrelation():
-
-	"""compute matter 2pcf using Corrfunc"""
-
-	for subdir in subdirectories:
-	
-		# particle subsamples are in the corresponding FOF directory
-		FOF_subdir = str(subdir).replace("Rockstar", "FOF")
-		
-		matter_auto = txt_matter_autocorrelation_this_sim(FOF_subdir)
-		subsample = hdf5_particles_subsample_this_sim(FOF_subdir)
-		script = "./Analysis/autocorrelation_Corrfunc.py"
-		binsfile = binfile_this_sim(rmin, rmax, halo_working_directory)
-
-		deps = [subsample, script, binsfile]
-		targets = [matter_auto]
-		
-		if Path(subsample).exists():
-		
-			yield {
-				'actions': [f"python {script} --ignore_weights {boxsize} {binsfile} {subsample} {matter_auto}", f"cp {matter_auto} {matter_auto.replace('FOF','Rockstar')}"],
-				'file_dep': deps,
-				'targets': targets,
-				'name': FOF_subdir,
-			}
+#def task_compute_matter_autocorrelation():
+#
+#	"""compute matter 2pcf using Corrfunc"""
+#
+#	for subdir in subdirectories:
+#	
+#		# particle subsamples are in the corresponding FOF directory
+#		FOF_subdir = str(subdir).replace("Rockstar", "FOF")
+#		
+#		matter_auto = txt_matter_autocorrelation_this_sim(FOF_subdir)
+#		subsample = hdf5_particles_subsample_this_sim(FOF_subdir)
+#		script = "./Analysis/autocorrelation_Corrfunc.py"
+#		binsfile = binfile_this_sim(rmin, rmax, halo_working_directory)
+#
+#		deps = [subsample, script, binsfile]
+#		targets = [matter_auto]
+#		
+#		if Path(subsample).exists():
+#		
+#			yield {
+#				'actions': [f"python {script} --ignore_weights {boxsize} {binsfile} {subsample} {matter_auto}", f"cp {matter_auto} {matter_auto.replace('FOF','Rockstar')}"],
+#				'file_dep': deps,
+#				'targets': targets,
+#				'name': FOF_subdir,
+#			}
 
 
 ###
