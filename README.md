@@ -5,7 +5,9 @@
 
 Clone this git repository. It is recommended to create a new virtual environment for ACME (Python 3.7+ is *required* for using ACME). Then install all required Python packages as such:
 ```
-conda create -n acme -f acme.yaml
+git clone https://github.com/BenWibking/acme-emulator.git
+cd acme-emulator
+conda env create -n acme --file acme.yml
 conda activate acme
 ```
 
