@@ -147,7 +147,6 @@
 <span class="kn">import</span> <span class="nn">scipy.interpolate</span> <span class="k">as</span> <span class="nn">interpolate</span>
 <span class="kn">import</span> <span class="nn">scipy.special</span> <span class="k">as</span> <span class="nn">special</span>
 <span class="kn">import</span> <span class="nn">configparser</span>
-<span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">from</span> <span class="nn">compute_DeltaSigma</span> <span class="k">import</span> <span class="n">sigma_crit</span>
 
 
@@ -401,6 +400,8 @@
 <div class="viewcode-block" id="main"><a class="viewcode-back" href="../compute_covar_DeltaSigma.html#compute_covar_DeltaSigma.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">parameter_file</span><span class="p">,</span> <span class="n">pk_gg_filename</span><span class="p">,</span> <span class="n">pk_gm_filename</span><span class="p">,</span> <span class="n">pk_mm_filename</span><span class="p">,</span>
 		<span class="n">output_lensing_filename</span><span class="p">,</span> <span class="n">output_lensing_precision</span><span class="p">,</span>
 		<span class="n">output_lensing_signal</span><span class="p">,</span> <span class="n">output_lensing_nointrinsic_filename</span><span class="p">,</span> <span class="n">gamma_t</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+	<span class="kn">import</span> <span class="nn">sys</span>
 
 	<span class="n">k_gg_in</span><span class="p">,</span> <span class="n">pk_gg_in</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">pk_gg_filename</span><span class="p">,</span> <span class="n">unpack</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 	<span class="n">k_gm_in</span><span class="p">,</span> <span class="n">pk_gm_in</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">pk_gm_filename</span><span class="p">,</span> <span class="n">unpack</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>

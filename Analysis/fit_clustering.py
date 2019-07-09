@@ -2,7 +2,6 @@ import h5py
 import configparser
 import nlopt
 import mpmath
-import sys
 import mpi4py
 from pathlib import Path
 import scipy.stats
@@ -14,6 +13,7 @@ from predict_emulator import get_emulate_fun, compute_analytic_wp
 
 
 def exec_mpi(func, *args):
+	import sys
 	if 'mpi4py' not in sys.modules:
 		func(*args)
 	else:

@@ -1,12 +1,12 @@
 import numpy as np
 import numpy.linalg as linalg
-import sys
 from numba import jit
 from math import exp
 import time
 import matplotlib.pyplot as plt
 
-from fit_data import tex_escape, read_data, model_data, compute_labels
+from train_emu import read_data, model_data, compute_labels
+from plot_emulator import tex_escape
 
 def test_data(sims_dir, redshift_dir, param_files, plot_filename, input_emu_filename):
     """read in test data"""

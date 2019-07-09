@@ -6,7 +6,6 @@ import subprocess
 import numpy as np
 import scipy.optimize
 import h5py as h5
-import sys
 
 import config
 import configparser

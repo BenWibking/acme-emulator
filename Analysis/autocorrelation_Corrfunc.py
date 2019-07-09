@@ -1,8 +1,6 @@
-from __future__ import print_function
 import argparse
 import h5py as h5
 import os.path as path
-import sys
 import numpy as np
 import Corrfunc
 from Corrfunc.theory.xi import xi as corrfunc_xi

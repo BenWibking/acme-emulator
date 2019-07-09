@@ -66,12 +66,3 @@ def preliminize(text="Preliminary", ax=None, dpi=100, **kwargs):
 
 
 
-if __name__ == "__main__":
-    # test case
-    fig, ax = plt.subplots(figsize=(8, 6))
-    x = range(10)
-    y = [xi ** 2 + 1 for xi in x]
-    ax.plot(x, y)
-
-    preliminize()
-    plt.savefig('preliminize.png')

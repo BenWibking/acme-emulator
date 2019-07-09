@@ -7,7 +7,6 @@ import numpy as np
 import scipy.optimize
 import scipy.integrate
 import scipy.signal
-import sys
 import camb
 from compute_sigma8 import wcdm_growth_factor
 from scipy.integrate import simps as simpson

@@ -3,10 +3,11 @@ import argparse
 import numpy as np
 import scipy.optimize
 import scipy.integrate
-import sys
 import configparser
-
+from numba import jit
 from compute_sigma8 import growth_factor
+from compute_hod import differential_pair_count_NFW, differential_pair_count_NFW_samec
+
 delta_c = 1.686
 Delta_vir = 200.
 
@@ -15,8 +16,6 @@ Msun_to_g = 1.989e33 # Conversion factor from Msun to grams
 G = 6.672e-8 # Universal Gravitational Constant in cgs units
 Hubble = 3.2407789e-18 # Hubble's constant h/sec
 rho_crit = (3.0*Hubble**2 / (8.0 * np.pi * G)) * (Mpc_to_cm**3 / Msun_to_g) # Msun h^2 / Mpc^3
-
-from compute_hod import differential_pair_count_NFW, differential_pair_count_NFW_samec
 
 def compute_power(x,y,z,weight, boxsize, ngrid=512):
 

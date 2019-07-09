@@ -70,20 +70,21 @@ def plot_pk(input_files,logy=True,title=None,ylabel=None,residuals=True):
         ax.set_title(title)
         plt.tight_layout()
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--residuals',default=False,action='store_true',help='plot ratio of inputs to first input')
-parser.add_argument('output_file',help='pdf output for figure')
-parser.add_argument('figure_title',help='figure title')
-parser.add_argument('figure_yaxis',help='figure y-axis label')
-#parser.add_argument('input_files',nargs='*',help='correlation function files')
-parser.add_argument('-f','--input_file',nargs=2,action='append',help='correlation function file')
-# this returns a list of tuples, one item for each input file
-# -- the first part of the tuple should be the filename
-# -- the second part of the tuple should be the plot label
+        
+if __name__ == '__main__':
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--residuals',default=False,action='store_true',help='plot ratio of inputs to first input')
+        parser.add_argument('output_file',help='pdf output for figure')
+        parser.add_argument('figure_title',help='figure title')
+        parser.add_argument('figure_yaxis',help='figure y-axis label')
+        parser.add_argument('-f','--input_file',nargs=2,action='append',help='correlation function file')
+        # this returns a list of tuples, one item for each input file
+        # -- the first part of the tuple should be the filename
+        # -- the second part of the tuple should be the plot label
 
-args = parser.parse_args()
+        args = parser.parse_args()
 
-with PdfPages(args.output_file) as pdf:
-        plot_pk(args.input_file, title=args.figure_title, ylabel=args.figure_yaxis,
-                residuals=args.residuals)
-        pdf.savefig()
+        with PdfPages(args.output_file) as pdf:
+                plot_pk(args.input_file, title=args.figure_title, ylabel=args.figure_yaxis,
+                        residuals=args.residuals)
+                pdf.savefig()

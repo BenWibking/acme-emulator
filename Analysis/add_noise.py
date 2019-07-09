@@ -1,7 +1,6 @@
 import numpy as np
 import argparse
 from pathlib import Path
-import sys
 
 def load_correlation_file(filename):
     table = np.loadtxt(filename,unpack=False)

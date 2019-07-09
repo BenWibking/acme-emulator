@@ -3,7 +3,6 @@ import numpy.linalg as linalg
 import scipy.integrate as integrate
 import scipy.special as special
 import configparser
-import sys
 
 from compute_covar_DeltaSigma import supersample_and_extend_pk, measurement_bins, my_sinc, window, cov_signal_restrict_scales
 
@@ -79,6 +78,8 @@ def cleaned_precision_matrix(cov):
 
 def main(parameter_file, 
          pk_gg_filename, output_clustering_filename, output_clustering_precision, output_clustering_signal):
+    import sys
+
     k_gg_in,pk_gg_in = np.loadtxt(pk_gg_filename,unpack=True)
     k_gg,pk_gg = supersample_and_extend_pk(k_gg_in,pk_gg_in)
 

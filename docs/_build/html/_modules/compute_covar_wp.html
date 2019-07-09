@@ -146,7 +146,6 @@
 <span class="kn">import</span> <span class="nn">scipy.integrate</span> <span class="k">as</span> <span class="nn">integrate</span>
 <span class="kn">import</span> <span class="nn">scipy.special</span> <span class="k">as</span> <span class="nn">special</span>
 <span class="kn">import</span> <span class="nn">configparser</span>
-<span class="kn">import</span> <span class="nn">sys</span>
 
 <span class="kn">from</span> <span class="nn">compute_covar_DeltaSigma</span> <span class="k">import</span> <span class="n">supersample_and_extend_pk</span><span class="p">,</span> <span class="n">measurement_bins</span><span class="p">,</span> <span class="n">my_sinc</span><span class="p">,</span> <span class="n">window</span><span class="p">,</span> <span class="n">cov_signal_restrict_scales</span>
 
@@ -222,6 +221,8 @@
 
 <div class="viewcode-block" id="main"><a class="viewcode-back" href="../compute_covar_wp.html#compute_covar_wp.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">parameter_file</span><span class="p">,</span> 
          <span class="n">pk_gg_filename</span><span class="p">,</span> <span class="n">output_clustering_filename</span><span class="p">,</span> <span class="n">output_clustering_precision</span><span class="p">,</span> <span class="n">output_clustering_signal</span><span class="p">):</span>
+    <span class="kn">import</span> <span class="nn">sys</span>
+
     <span class="n">k_gg_in</span><span class="p">,</span><span class="n">pk_gg_in</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">pk_gg_filename</span><span class="p">,</span><span class="n">unpack</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">k_gg</span><span class="p">,</span><span class="n">pk_gg</span> <span class="o">=</span> <span class="n">supersample_and_extend_pk</span><span class="p">(</span><span class="n">k_gg_in</span><span class="p">,</span><span class="n">pk_gg_in</span><span class="p">)</span>
 

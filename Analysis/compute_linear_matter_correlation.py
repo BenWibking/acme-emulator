@@ -16,7 +16,6 @@ from numpy import exp, log, log10, cos, sin, pi
 from scipy.special import gamma 
 from time import time 
 from numpy import gradient as grad
-import sys
 
 from compute_sigma8 import sigma_8_log_spaced, growth_factor
 
@@ -70,6 +69,7 @@ def u_m_vals(m,mu,q,kr,L):
 
 def fft_log(k,f_k,q,mu):
         """ Compute the discrete Fourier transform of a log-spaced input signal. """
+        import sys
         if ((q+mu) < -1):
                 print('Error in reality condition for Bessel function integration.')
                 print(' q+mu is less than -1.')

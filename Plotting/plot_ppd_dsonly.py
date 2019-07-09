@@ -3,14 +3,16 @@ import matplotlib
 import matplotlib.pyplot as plt
 import argparse
 from pathlib import Path
-from pymultinest.analyse import Analyzer
 from preliminize import preliminize
 
-matplotlib.rcParams['text.latex.preamble'] = [
-    r'\usepackage{amsmath}',
-    r'\usepackage{amssymb}']
 
 if __name__ == '__main__':
+		
+	matplotlib.rcParams['text.latex.preamble'] = [
+				r'\usepackage{amsmath}',
+				r'\usepackage{amssymb}']
+
+	from pymultinest.analyse import Analyzer
 
 	parser = argparse.ArgumentParser()
 

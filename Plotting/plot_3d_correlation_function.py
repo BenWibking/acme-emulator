@@ -162,31 +162,31 @@ def plot_2pcf(input_files,logy=True,title=None,ylabel=None,residuals=True,
 
         plt.tight_layout()
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--linear_yaxis',default=False,action='store_true',help='do not use a log scale for the y-axis')
-parser.add_argument('--log_format_xaxis',default=False,action='store_true',help='use a log-formatted scale for the x-axis')
-parser.add_argument('--residuals',default=False,action='store_true',help='plot ratio of inputs to first input')
-parser.add_argument('--residuals_only',default=False,action='store_true',help='only plot ratio of inputs to first input')
-parser.add_argument('--ymin',default=None,type=float)
-parser.add_argument('--ymax',default=None,type=float)
-parser.add_argument('--xmin',default=None,type=float)
-parser.add_argument('--xmax',default=None,type=float)
-parser.add_argument('output_file',help='pdf output for figure')
-parser.add_argument('figure_title',help='figure title')
-parser.add_argument('figure_yaxis',help='figure y-axis label')
-#parser.add_argument('input_files',nargs='*',help='correlation function files')
-parser.add_argument('-f','--input_file',nargs=3,action='append',help='correlation function file')
-# this returns a list of tuples, one item for each input file
-# -- the first part of the tuple should be the filename
-# -- the second part of the tuple should be the plot label
+if __name__ == '__main__':
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--linear_yaxis',default=False,action='store_true',help='do not use a log scale for the y-axis')
+        parser.add_argument('--log_format_xaxis',default=False,action='store_true',help='use a log-formatted scale for the x-axis')
+        parser.add_argument('--residuals',default=False,action='store_true',help='plot ratio of inputs to first input')
+        parser.add_argument('--residuals_only',default=False,action='store_true',help='only plot ratio of inputs to first input')
+        parser.add_argument('--ymin',default=None,type=float)
+        parser.add_argument('--ymax',default=None,type=float)
+        parser.add_argument('--xmin',default=None,type=float)
+        parser.add_argument('--xmax',default=None,type=float)
+        parser.add_argument('output_file',help='pdf output for figure')
+        parser.add_argument('figure_title',help='figure title')
+        parser.add_argument('figure_yaxis',help='figure y-axis label')
 
-args = parser.parse_args()
+        parser.add_argument('-f','--input_file',nargs=3,action='append',help='correlation function file')
+        # this returns a list of tuples, one item for each input file
+        # -- the first part of the tuple should be the filename
+        # -- the second part of the tuple should be the plot label
 
-with PdfPages(args.output_file) as pdf:
-#       hod_label = r"$n_g={ngal}$, $\sigma_{{\log M}}={siglogM}$, $M_1/M_m={M1_over_Mmin}$, $M_0/M_1={M0_over_M1}$, $\alpha={alpha}$".format(siglogM=float(siglogM), ngal=float(ngal), M0_over_M1=float(M0_over_M1), M1_over_Mmin=float(M1_over_Mmin), alpha=float(alpha))
-#                        ylabel=r'$\xi_{gg}$')
-        plot_2pcf(args.input_file, title=args.figure_title, ylabel=args.figure_yaxis,
-                  logy=(not args.linear_yaxis), residuals=args.residuals,
-                  residuals_only=args.residuals_only, linear_format_xaxis=(not args.log_format_xaxis),
-                  ymin=args.ymin, ymax=args.ymax, xmin=args.xmin, xmax=args.xmax)
-        pdf.savefig()
+        args = parser.parse_args()
+
+        with PdfPages(args.output_file) as pdf:
+
+                plot_2pcf(args.input_file, title=args.figure_title, ylabel=args.figure_yaxis,
+                          logy=(not args.linear_yaxis), residuals=args.residuals,
+                          residuals_only=args.residuals_only, linear_format_xaxis=(not args.log_format_xaxis),
+                          ymin=args.ymin, ymax=args.ymax, xmin=args.xmin, xmax=args.xmax)
+                pdf.savefig()

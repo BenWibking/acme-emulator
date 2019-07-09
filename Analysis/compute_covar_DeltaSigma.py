@@ -4,7 +4,6 @@ import scipy.integrate as integrate
 import scipy.interpolate as interpolate
 import scipy.special as special
 import configparser
-import sys
 from compute_DeltaSigma import sigma_crit
 
 
@@ -258,6 +257,8 @@ def compute_signal_to_noise(cov, signal):
 def main(parameter_file, pk_gg_filename, pk_gm_filename, pk_mm_filename,
 		output_lensing_filename, output_lensing_precision,
 		output_lensing_signal, output_lensing_nointrinsic_filename, gamma_t=None):
+
+	import sys
 
 	k_gg_in, pk_gg_in = np.loadtxt(pk_gg_filename, unpack=True)
 	k_gm_in, pk_gm_in = np.loadtxt(pk_gm_filename, unpack=True)

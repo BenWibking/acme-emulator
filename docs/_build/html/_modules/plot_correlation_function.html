@@ -1,0 +1,387 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>plot_correlation_function &mdash; ACME Emulator  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> ACME Emulator
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ACME Emulator</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">Module code</a> &raquo;</li>
+        
+      <li>plot_correlation_function</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for plot_correlation_function</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">matplotlib</span>
+<span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s1">&#39;agg&#39;</span><span class="p">)</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">matplotlib.ticker</span>
+<span class="kn">from</span> <span class="nn">matplotlib.backends.backend_pdf</span> <span class="k">import</span> <span class="n">PdfPages</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">scipy.interpolate</span>
+<span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="k">import</span> <span class="n">Path</span>
+
+<div class="viewcode-block" id="plot_errorbar"><a class="viewcode-back" href="../plot_correlation_function.html#plot_correlation_function.plot_errorbar">[docs]</a><span class="k">def</span> <span class="nf">plot_errorbar</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">yerr</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;plot errorbar with extended linestyles.&quot;&quot;&quot;</span>
+		<span class="k">if</span> <span class="n">fmt</span> <span class="o">==</span> <span class="s1">&#39;-..&#39;</span><span class="p">:</span>
+				<span class="n">ax</span><span class="o">.</span><span class="n">errorbar</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">yerr</span><span class="o">=</span><span class="n">yerr</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">dashes</span><span class="o">=</span><span class="p">[</span><span class="mi">7</span><span class="p">,</span><span class="mf">1.5</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mf">1.5</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mf">1.5</span><span class="p">])</span>
+		<span class="k">else</span><span class="p">:</span>
+				<span class="n">ax</span><span class="o">.</span><span class="n">errorbar</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">yerr</span><span class="o">=</span><span class="n">yerr</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="n">fmt</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="add_whitespace"><a class="viewcode-back" href="../plot_correlation_function.html#plot_correlation_function.add_whitespace">[docs]</a><span class="k">def</span> <span class="nf">add_whitespace</span><span class="p">(</span><span class="n">global_min</span><span class="p">,</span> <span class="n">global_max</span><span class="p">,</span> <span class="n">margin_fraction</span><span class="o">=</span><span class="mf">0.05</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;add/subtract 5% of |global_max - global_min| to global_min,global_max&quot;&quot;&quot;</span>
+		<span class="n">this_min</span> <span class="o">=</span> <span class="n">global_min</span>
+		<span class="n">this_max</span> <span class="o">=</span> <span class="n">global_max</span>
+
+		<span class="n">global_range</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">this_max</span> <span class="o">-</span> <span class="n">this_min</span><span class="p">)</span>
+		<span class="n">margin</span> <span class="o">=</span> <span class="n">margin_fraction</span> <span class="o">*</span> <span class="n">global_range</span>
+
+		<span class="n">result</span> <span class="o">=</span> <span class="p">(</span><span class="n">this_min</span> <span class="o">-</span> <span class="n">margin</span><span class="p">,</span> <span class="n">this_max</span> <span class="o">+</span> <span class="n">margin</span><span class="p">)</span>
+		<span class="k">return</span> <span class="n">result</span></div>
+
+<div class="viewcode-block" id="add_whitespace_logscale"><a class="viewcode-back" href="../plot_correlation_function.html#plot_correlation_function.add_whitespace_logscale">[docs]</a><span class="k">def</span> <span class="nf">add_whitespace_logscale</span><span class="p">(</span><span class="n">global_min</span><span class="p">,</span> <span class="n">global_max</span><span class="p">,</span> <span class="n">margin_fraction</span><span class="o">=</span><span class="mf">0.05</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;add/subtract 5% of |global_max - global_min| to global_min,global_max&quot;&quot;&quot;</span>
+		<span class="n">this_min</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">global_min</span><span class="p">)</span>
+		<span class="n">this_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">global_max</span><span class="p">)</span>
+
+		<span class="n">global_range</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">this_max</span> <span class="o">-</span> <span class="n">this_min</span><span class="p">)</span>
+		<span class="n">margin</span> <span class="o">=</span> <span class="n">margin_fraction</span> <span class="o">*</span> <span class="n">global_range</span>
+
+		<span class="n">result</span> <span class="o">=</span> <span class="p">(</span><span class="mf">10.</span><span class="o">**</span><span class="p">(</span><span class="n">this_min</span><span class="o">-</span><span class="n">margin</span><span class="p">),</span> <span class="mf">10.</span><span class="o">**</span><span class="p">(</span><span class="n">this_max</span><span class="o">+</span><span class="n">margin</span><span class="p">))</span>
+		<span class="k">return</span> <span class="n">result</span></div>
+
+<div class="viewcode-block" id="load_correlation_file"><a class="viewcode-back" href="../plot_correlation_function.html#plot_correlation_function.load_correlation_file">[docs]</a><span class="k">def</span> <span class="nf">load_correlation_file</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+		<span class="n">table</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="n">unpack</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+		<span class="n">binmin</span><span class="p">,</span> <span class="n">binmax</span><span class="p">,</span> <span class="n">counts</span><span class="p">,</span> <span class="n">corr</span> <span class="o">=</span> <span class="p">[</span><span class="n">table</span><span class="p">[:,</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)]</span>                        
+		<span class="k">return</span> <span class="n">binmin</span><span class="p">,</span><span class="n">binmax</span><span class="p">,</span><span class="n">corr</span></div>
+
+<div class="viewcode-block" id="interpolate_or_nan"><a class="viewcode-back" href="../plot_correlation_function.html#plot_correlation_function.interpolate_or_nan">[docs]</a><span class="k">def</span> <span class="nf">interpolate_or_nan</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">):</span>
+		<span class="n">interpolator</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">interpolate</span><span class="o">.</span><span class="n">interp1d</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">)</span>
+		<span class="n">xmin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+		<span class="n">xmax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+		<span class="k">def</span> <span class="nf">interp_fun</span><span class="p">(</span><span class="n">z</span><span class="p">):</span>
+				<span class="k">if</span> <span class="n">z</span> <span class="o">&gt;=</span> <span class="n">xmin</span> <span class="ow">and</span> <span class="n">z</span> <span class="o">&lt;=</span> <span class="n">xmax</span><span class="p">:</span>
+						<span class="k">return</span> <span class="n">interpolator</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
+				<span class="k">else</span><span class="p">:</span>
+						<span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">NaN</span>
+		<span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">vectorize</span><span class="p">(</span><span class="n">interp_fun</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="plot_2pcf"><a class="viewcode-back" href="../plot_correlation_function.html#plot_correlation_function.plot_2pcf">[docs]</a><span class="k">def</span> <span class="nf">plot_2pcf</span><span class="p">(</span><span class="n">input_files</span><span class="p">,</span><span class="n">logy</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">ylabel</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">residuals</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+			<span class="n">residuals_only</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">linear_format_xaxis</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">ymin</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">ymax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+			<span class="n">large_labels</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+		<span class="n">color_cycle</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;black&#39;</span><span class="p">,</span> <span class="s1">&#39;blue&#39;</span><span class="p">,</span> <span class="s1">&#39;green&#39;</span><span class="p">,</span> <span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="s1">&#39;brown&#39;</span><span class="p">]</span>
+		<span class="n">style_cycle</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="s1">&#39;-.&#39;</span><span class="p">,</span> <span class="s1">&#39;:&#39;</span><span class="p">,</span> <span class="s1">&#39;-..&#39;</span><span class="p">]</span>
+
+		<span class="k">if</span> <span class="n">large_labels</span><span class="o">==</span><span class="kc">True</span><span class="p">:</span>
+				<span class="n">axisfontsize</span><span class="o">=</span><span class="mi">20</span>
+				<span class="n">legendfontsize</span><span class="o">=</span><span class="mi">14</span>
+				<span class="n">ticklabelfontsize</span><span class="o">=</span><span class="mi">16</span>
+				<span class="n">myfigsize</span><span class="o">=</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">)</span>
+		<span class="k">else</span><span class="p">:</span>
+				<span class="n">axisfontsize</span><span class="o">=</span><span class="mi">16</span>
+				<span class="n">legendfontsize</span><span class="o">=</span><span class="mi">12</span>
+				<span class="n">ticklabelfontsize</span><span class="o">=</span><span class="mi">12</span>
+				<span class="n">myfigsize</span><span class="o">=</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">)</span>
+
+		<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="n">myfigsize</span><span class="p">)</span>
+
+		<span class="k">if</span> <span class="n">residuals</span><span class="p">:</span>
+				<span class="n">fig</span><span class="p">,</span> <span class="n">ax_arr</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+				<span class="n">ax</span> <span class="o">=</span> <span class="n">ax_arr</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+				<span class="n">ax_resid</span> <span class="o">=</span> <span class="n">ax_arr</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+		<span class="k">elif</span> <span class="ow">not</span> <span class="n">residuals_only</span><span class="p">:</span>
+				<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+		<span class="k">else</span><span class="p">:</span>
+				<span class="n">fig</span><span class="p">,</span> <span class="n">ax_resid</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+
+		<span class="n">global_binmin</span><span class="p">,</span> <span class="n">global_binmax</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">]</span>
+		<span class="n">global_fmin</span><span class="p">,</span> <span class="n">global_fmax</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]</span>
+		<span class="n">global_min</span><span class="p">,</span> <span class="n">global_max</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">]</span>
+		<span class="n">first_bins</span> <span class="o">=</span> <span class="p">[]</span>
+		<span class="n">first_corr</span> <span class="o">=</span> <span class="p">[]</span>
+		<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">input_label</span><span class="p">,</span> <span class="n">cov_f</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">input_files</span><span class="p">):</span>
+				<span class="n">line_color</span> <span class="o">=</span> <span class="n">color_cycle</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">mod</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">color_cycle</span><span class="p">))]</span>
+				<span class="n">line_style</span> <span class="o">=</span> <span class="n">style_cycle</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">mod</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">style_cycle</span><span class="p">))]</span>
+				<span class="n">binmin</span><span class="p">,</span> <span class="n">binmax</span><span class="p">,</span> <span class="n">corr</span> <span class="o">=</span> <span class="n">load_correlation_file</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+				<span class="k">if</span> <span class="n">logy</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+						<span class="n">corr</span><span class="p">[</span><span class="n">corr</span> <span class="o">&lt;=</span> <span class="mf">0.</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">NaN</span>
+				<span class="n">err</span> <span class="o">=</span> <span class="kc">None</span>
+				<span class="k">if</span> <span class="n">cov_f</span> <span class="ow">is</span> <span class="ow">not</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+						<span class="n">cov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">cov_f</span><span class="p">)</span>
+						<span class="n">err</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">cov</span><span class="p">))</span>
+						<span class="c1">#print(err)</span>
+				<span class="n">global_binmin</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">global_binmin</span><span class="p">,</span> <span class="n">binmin</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+				<span class="n">global_binmax</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">global_binmax</span><span class="p">,</span> <span class="n">binmax</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+				<span class="n">bins</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">binmax</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">binmin</span><span class="p">))</span><span class="o">*</span><span class="mf">0.5</span>
+				<span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+						<span class="n">first_bins</span> <span class="o">=</span> <span class="n">bins</span>
+						<span class="n">first_corr</span> <span class="o">=</span> <span class="n">corr</span>
+				<span class="k">if</span> <span class="ow">not</span> <span class="n">residuals_only</span><span class="p">:</span>
+						<span class="n">global_min</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">global_min</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmin</span><span class="p">(</span><span class="n">corr</span><span class="p">))</span>
+						<span class="n">global_max</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">global_max</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">corr</span><span class="p">))</span>
+						<span class="n">plot_errorbar</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">bins</span><span class="p">,</span> <span class="n">corr</span><span class="p">,</span> <span class="n">yerr</span><span class="o">=</span><span class="n">err</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">input_label</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">line_color</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="n">line_style</span><span class="p">)</span>
+				<span class="k">if</span> <span class="n">residuals</span> <span class="ow">or</span> <span class="n">residuals_only</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">bins</span><span class="p">,</span><span class="n">first_bins</span><span class="p">):</span>
+						<span class="c1"># interpolate corr onto first_bins</span>
+						<span class="n">interp_corr</span> <span class="o">=</span> <span class="n">interpolate_or_nan</span><span class="p">(</span><span class="n">bins</span><span class="p">,</span><span class="n">corr</span><span class="p">)</span>
+						<span class="n">f</span> <span class="o">=</span> <span class="n">interp_corr</span><span class="p">(</span><span class="n">first_bins</span><span class="p">)</span><span class="o">/</span><span class="n">first_corr</span>
+						<span class="n">resid_err</span> <span class="o">=</span> <span class="kc">None</span>
+						<span class="k">if</span> <span class="n">cov_f</span> <span class="ow">is</span> <span class="ow">not</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+								<span class="n">interp_err</span> <span class="o">=</span> <span class="n">interpolate_or_nan</span><span class="p">(</span><span class="n">bins</span><span class="p">,</span><span class="n">err</span><span class="p">)</span>
+								<span class="n">resid_err</span> <span class="o">=</span> <span class="n">interp_err</span><span class="p">(</span><span class="n">first_bins</span><span class="p">)</span><span class="o">/</span><span class="n">first_corr</span>
+						<span class="c1">#print(first_corr)</span>
+						<span class="c1">#print(resid_err)</span>
+						<span class="n">global_fmin</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">global_fmin</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmin</span><span class="p">(</span><span class="n">f</span><span class="p">))</span>
+						<span class="n">global_fmax</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">global_fmax</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">f</span><span class="p">))</span>
+						<span class="n">plot_errorbar</span><span class="p">(</span><span class="n">ax_resid</span><span class="p">,</span> <span class="n">first_bins</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">yerr</span><span class="o">=</span><span class="n">resid_err</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">input_label</span><span class="p">,</span>
+										<span class="n">color</span><span class="o">=</span><span class="n">line_color</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="n">line_style</span><span class="p">)</span>
+
+		<span class="k">if</span> <span class="n">residuals</span><span class="p">:</span>
+				<span class="n">axes</span> <span class="o">=</span> <span class="p">[</span><span class="n">ax</span><span class="p">,</span> <span class="n">ax_resid</span><span class="p">]</span>
+				<span class="n">resid_max</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="mf">1.0</span><span class="o">-</span><span class="n">global_fmin</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="mf">1.0</span><span class="o">-</span><span class="n">global_fmax</span><span class="p">))</span>
+<span class="c1">#                resid_max = 0.2</span>
+				<span class="n">ax_resid</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">((</span><span class="mf">1.0</span><span class="o">-</span><span class="n">resid_max</span><span class="p">,</span><span class="mf">1.0</span><span class="o">+</span><span class="n">resid_max</span><span class="p">))</span>
+				<span class="n">ax_resid</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;ratio of </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">ylabel</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="n">axisfontsize</span><span class="p">)</span>
+				<span class="n">ax_resid</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$r_p$ ($h^{-1}$ Mpc)&#39;</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="n">axisfontsize</span><span class="p">)</span>
+		<span class="k">elif</span> <span class="n">residuals_only</span><span class="p">:</span>
+				<span class="n">axes</span> <span class="o">=</span> <span class="p">[</span><span class="n">ax_resid</span><span class="p">]</span>
+<span class="c1">#                resid_max = max(np.abs(1.0-global_fmin), np.abs(1.0-global_fmax))</span>
+				<span class="n">resid_max</span> <span class="o">=</span> <span class="mf">0.2</span>
+				<span class="n">ax_resid</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">((</span><span class="mf">1.0</span><span class="o">-</span><span class="n">resid_max</span><span class="p">,</span><span class="mf">1.0</span><span class="o">+</span><span class="n">resid_max</span><span class="p">))</span>
+				<span class="n">ax_resid</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;ratio of </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">ylabel</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="n">axisfontsize</span><span class="p">)</span>
+				<span class="n">ax_resid</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$r_p$ ($h^{-1}$ Mpc)&#39;</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="n">axisfontsize</span><span class="p">)</span>
+				<span class="k">if</span> <span class="n">ymin</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">ymax</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+					<span class="n">ax_resid</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">((</span><span class="n">ymin</span><span class="p">,</span><span class="n">ymax</span><span class="p">))</span>
+		<span class="k">else</span><span class="p">:</span>
+				<span class="n">axes</span> <span class="o">=</span> <span class="p">[</span><span class="n">ax</span><span class="p">]</span>
+				<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$r_p$ ($h^{-1}$ Mpc)&#39;</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="n">axisfontsize</span><span class="p">)</span>
+		
+		<span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">axes</span><span class="p">:</span>
+				<span class="n">x</span><span class="o">.</span><span class="n">set_xscale</span><span class="p">(</span><span class="s1">&#39;log&#39;</span><span class="p">)</span>
+				<span class="n">x</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">add_whitespace_logscale</span><span class="p">(</span><span class="n">global_binmin</span><span class="p">,</span> <span class="n">global_binmax</span><span class="p">))</span>
+				<span class="n">x</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_tick_params</span><span class="p">(</span><span class="n">top</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">direction</span><span class="o">=</span><span class="s1">&#39;in&#39;</span><span class="p">,</span><span class="n">which</span><span class="o">=</span><span class="s1">&#39;both&#39;</span><span class="p">,</span>
+										<span class="n">labelsize</span><span class="o">=</span><span class="n">ticklabelfontsize</span><span class="p">)</span>
+				<span class="n">x</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_tick_params</span><span class="p">(</span><span class="n">right</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">direction</span><span class="o">=</span><span class="s1">&#39;in&#39;</span><span class="p">,</span><span class="n">which</span><span class="o">=</span><span class="s1">&#39;both&#39;</span><span class="p">,</span>
+										<span class="n">labelsize</span><span class="o">=</span><span class="n">ticklabelfontsize</span><span class="p">)</span>
+				<span class="k">if</span> <span class="n">linear_format_xaxis</span><span class="p">:</span>
+						<span class="n">x</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_formatter</span><span class="p">(</span><span class="n">matplotlib</span><span class="o">.</span><span class="n">ticker</span><span class="o">.</span><span class="n">ScalarFormatter</span><span class="p">())</span>
+
+		<span class="k">if</span> <span class="n">logy</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">residuals_only</span><span class="p">:</span>
+				<span class="n">ax</span><span class="o">.</span><span class="n">set_yscale</span><span class="p">(</span><span class="s1">&#39;log&#39;</span><span class="p">)</span>
+		
+		<span class="k">if</span> <span class="ow">not</span> <span class="n">residuals_only</span><span class="p">:</span>
+				<span class="k">if</span> <span class="n">logy</span><span class="p">:</span>
+						<span class="n">yrange</span> <span class="o">=</span> <span class="n">add_whitespace_logscale</span><span class="p">(</span><span class="n">global_min</span><span class="p">,</span><span class="n">global_max</span><span class="p">)</span>
+				<span class="k">else</span><span class="p">:</span>
+						<span class="n">yrange</span> <span class="o">=</span> <span class="n">add_whitespace</span><span class="p">(</span><span class="n">global_min</span><span class="p">,</span><span class="n">global_max</span><span class="p">)</span>
+				<span class="k">if</span> <span class="n">ymin</span> <span class="o">==</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">ymax</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+						<span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">yrange</span><span class="p">)</span>
+				<span class="k">else</span><span class="p">:</span>
+						<span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">((</span><span class="n">ymin</span><span class="p">,</span><span class="n">ymax</span><span class="p">))</span>
+				<span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s1">&#39;best&#39;</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="n">legendfontsize</span><span class="p">)</span>
+				<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">ylabel</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="n">axisfontsize</span><span class="p">)</span>
+				<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
+		<span class="k">else</span><span class="p">:</span>
+				<span class="n">ax_resid</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s1">&#39;best&#39;</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="n">legendfontsize</span><span class="p">)</span>
+				<span class="n">ax_resid</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
+
+		<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span></div>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+                <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+                <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--linear_yaxis&#39;</span><span class="p">,</span><span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span><span class="n">help</span><span class="o">=</span><span class="s1">&#39;do not use a log scale for the y-axis&#39;</span><span class="p">)</span>
+                <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--log_format_xaxis&#39;</span><span class="p">,</span><span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span><span class="n">help</span><span class="o">=</span><span class="s1">&#39;use a log-formatted scale for the x-axis&#39;</span><span class="p">)</span>
+                <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--residuals&#39;</span><span class="p">,</span><span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span><span class="n">help</span><span class="o">=</span><span class="s1">&#39;plot ratio of inputs to first input&#39;</span><span class="p">)</span>
+                <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--residuals_only&#39;</span><span class="p">,</span><span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span><span class="n">help</span><span class="o">=</span><span class="s1">&#39;only plot ratio of inputs to first input&#39;</span><span class="p">)</span>
+                <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--ymin&#39;</span><span class="p">,</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+                <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--ymax&#39;</span><span class="p">,</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+                <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;output_file&#39;</span><span class="p">,</span><span class="n">help</span><span class="o">=</span><span class="s1">&#39;pdf output for figure&#39;</span><span class="p">)</span>
+                <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;figure_title&#39;</span><span class="p">,</span><span class="n">help</span><span class="o">=</span><span class="s1">&#39;figure title&#39;</span><span class="p">)</span>
+                <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;figure_yaxis&#39;</span><span class="p">,</span><span class="n">help</span><span class="o">=</span><span class="s1">&#39;figure y-axis label&#39;</span><span class="p">)</span>
+                <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-f&#39;</span><span class="p">,</span><span class="s1">&#39;--input_file&#39;</span><span class="p">,</span><span class="n">nargs</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span><span class="n">action</span><span class="o">=</span><span class="s1">&#39;append&#39;</span><span class="p">,</span><span class="n">help</span><span class="o">=</span><span class="s1">&#39;correlation function file&#39;</span><span class="p">)</span>
+                <span class="c1"># this returns a list of tuples, one item for each input file</span>
+                <span class="c1"># -- the first part of the tuple should be the filename</span>
+                <span class="c1"># -- the second part of the tuple should be the plot label</span>
+                <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--large_labels&#39;</span><span class="p">,</span><span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">)</span>
+
+                <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+                <span class="k">with</span> <span class="n">PdfPages</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">output_file</span><span class="p">)</span> <span class="k">as</span> <span class="n">pdf</span><span class="p">:</span>
+
+		                <span class="n">plot_2pcf</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">input_file</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">figure_title</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">figure_yaxis</span><span class="p">,</span>
+				          <span class="n">logy</span><span class="o">=</span><span class="p">(</span><span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">linear_yaxis</span><span class="p">),</span> <span class="n">residuals</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">residuals</span><span class="p">,</span>
+				          <span class="n">residuals_only</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">residuals_only</span><span class="p">,</span> <span class="n">linear_format_xaxis</span><span class="o">=</span><span class="p">(</span><span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">log_format_xaxis</span><span class="p">),</span>
+				          <span class="n">ymin</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">ymin</span><span class="p">,</span> <span class="n">ymax</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">ymax</span><span class="p">,</span> <span class="n">large_labels</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">large_labels</span><span class="p">)</span>
+
+		                <span class="n">pdf</span><span class="o">.</span><span class="n">savefig</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Ben Wibking
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

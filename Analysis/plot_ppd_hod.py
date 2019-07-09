@@ -3,12 +3,13 @@ import scipy.special
 import matplotlib.pyplot as plt
 import argparse
 from pathlib import Path
-from pymultinest.analyse import Analyzer
 from predict_emulator import get_emulate_fun
 from preliminize import preliminize
 
 
 if __name__ == '__main__':
+
+	from pymultinest.analyse import Analyzer
 
 	parser = argparse.ArgumentParser()
 	parser.add_argument('ppd_plot_hod_file')

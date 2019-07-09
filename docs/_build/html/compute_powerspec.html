@@ -145,8 +145,34 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="compute-powerspec-module">
-<h1>compute_powerspec module<a class="headerlink" href="#compute-powerspec-module" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-compute_powerspec">
+<span id="compute-powerspec-module"></span><h1>compute_powerspec module<a class="headerlink" href="#module-compute_powerspec" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="compute_powerspec.compute_power">
+<code class="sig-prename descclassname">compute_powerspec.</code><code class="sig-name descname">compute_power</code><span class="sig-paren">(</span><em class="sig-param">particles_filename</em>, <em class="sig-param">output_filename</em>, <em class="sig-param">ngrid=512</em>, <em class="sig-param">nfolds=5</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_powerspec.html#compute_power"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_powerspec.compute_power" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute power spectrum from particles.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="compute_powerspec.fold_particles">
+<code class="sig-prename descclassname">compute_powerspec.</code><code class="sig-name descname">fold_particles</code><span class="sig-paren">(</span><em class="sig-param">particles_x</em>, <em class="sig-param">particles_y</em>, <em class="sig-param">particles_z</em>, <em class="sig-param">boxsize</em>, <em class="sig-param">fold=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_powerspec.html#fold_particles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_powerspec.fold_particles" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="compute_powerspec.power_from_particles">
+<code class="sig-prename descclassname">compute_powerspec.</code><code class="sig-name descname">power_from_particles</code><span class="sig-paren">(</span><em class="sig-param">particles_x</em>, <em class="sig-param">particles_y</em>, <em class="sig-param">particles_z</em>, <em class="sig-param">ngrid</em>, <em class="sig-param">boxsize</em>, <em class="sig-param">rhogrid</em>, <em class="sig-param">fft_of_rhogrid</em>, <em class="sig-param">fft_plan</em>, <em class="sig-param">subtract_shot_noise=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_powerspec.html#power_from_particles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_powerspec.power_from_particles" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="compute_powerspec.power_from_particles_weights">
+<code class="sig-prename descclassname">compute_powerspec.</code><code class="sig-name descname">power_from_particles_weights</code><span class="sig-paren">(</span><em class="sig-param">particles_x</em>, <em class="sig-param">particles_y</em>, <em class="sig-param">particles_z</em>, <em class="sig-param">weights</em>, <em class="sig-param">ngrid</em>, <em class="sig-param">boxsize</em>, <em class="sig-param">rhogrid</em>, <em class="sig-param">fft_of_rhogrid</em>, <em class="sig-param">fft_plan</em>, <em class="sig-param">subtract_shot_noise=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_powerspec.html#power_from_particles_weights"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_powerspec.power_from_particles_weights" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="compute_powerspec.read_particles">
+<code class="sig-prename descclassname">compute_powerspec.</code><code class="sig-name descname">read_particles</code><span class="sig-paren">(</span><em class="sig-param">particles_filename</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/compute_powerspec.html#read_particles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#compute_powerspec.read_particles" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </div>
 
 

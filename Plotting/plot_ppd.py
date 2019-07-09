@@ -2,12 +2,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import argparse
 from pathlib import Path
-from pymultinest.analyse import Analyzer
 from preliminize import preliminize
 
 
-
 if __name__ == '__main__':
+
+	from pymultinest.analyse import Analyzer
 
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--mcmc-ppd', help='emcee PPD output file')
@@ -18,12 +18,10 @@ if __name__ == '__main__':
 	parser.add_argument('cov_file')
 	parser.add_argument('--discrepancy-plot', required=True)
 	parser.add_argument('--watermark', default=None)
-#	parser.add_argument('--data', default=False, action='store_true')
 	parser.add_argument('--ppd-samples', default=20)
 
 	args = parser.parse_args()
 	PPD_nsamples = args.ppd_samples
-
 
 	if args.multinest_dir is not None:
 

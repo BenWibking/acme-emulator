@@ -1,6 +1,5 @@
 import numpy as np
 from numpy import exp, log, log10, cos, sin, pi
-import sys
 
 import camb
 import camb.model
