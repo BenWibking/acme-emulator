@@ -1,0 +1,24 @@
+[params]
+ngal = 0.000264909078344
+siglogm = 0.47037336693
+m0_over_m1 = 0.254957288593
+m1_over_mmin = 17.1206528243
+alpha = 1.49750430115
+q_env = 0.0
+del_gamma = 0.0
+f_cen = 1.0
+a_conc = 1.60742264613
+delta_b = 0.0
+delta_c = 0.0
+r_rescale = 0.500240302819
+omega_m = 0.314
+sigma_8 = 0.820
+h0 = 67.26
+ns = 0.9652
+omega_b = 0.0491
+w0 = -1.0
+redshift = 0.300
+dir = 10
+is_stochastic = True
+seed = 42
+

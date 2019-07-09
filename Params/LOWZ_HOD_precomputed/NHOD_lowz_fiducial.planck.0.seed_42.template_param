@@ -1,0 +1,17 @@
+[params]
+ngal = 0.0003
+siglogm = 0.2
+m0_over_m1 = 0.1
+m1_over_mmin = 12.5
+alpha = 1.0
+q_env = 0.0
+del_gamma = 0.0
+f_cen = 1.0
+a_conc = 1.0
+delta_b = 0.0
+delta_c = 0.0
+r_rescale = 1.0
+dir = planck
+is_stochastic = True
+seed = 42
+
