@@ -1,17 +1,17 @@
-     100 files     200 files     300 files     400 files     500 files     600 files     700 files     800 files     900 files    1000 files    1100 files    1200 files    1300 files    1400 files    1500 files    1600 files    1700 files    1800 files    1900 files    2000 files    2100 files    2200 files    2300 files    2400 files    2500 files    2600 files    2676 text files.
-classified 2675 filesDuplicate file check 2675 files (286 known unique)Unique:      100 files                                          Unique:      200 files                                              2292 unique files.                              
-Counting:  41Counting:  0Counting:  45Counting:  0    2598 files ignored.
+     100 files     200 files     300 files     400 files     500 files     600 files     700 files     800 files     900 files    1000 files    1100 files    1200 files    1300 files    1400 files    1500 files    1600 files    1700 files    1800 files    1900 files    2000 files    2100 files    2200 files    2300 files    2400 files    2500 files    2600 files    2700 files    2800 files    2900 files    3000 files    3100 files    3200 files    3300 files    3400 files    3500 files    3600 files    3700 files    3800 files    3900 files    4000 files    4100 files    4200 files    4300 files    4360 text files.
+classified 4359 filesDuplicate file check 4359 files (301 known unique)Unique:      100 files                                          Unique:      200 files                                          Unique:      300 files                                              3976 unique files.                              
+Counting:  41Counting:  0Counting:  45Counting:  0    4283 files ignored.
 
-github.com/AlDanial/cloc v 1.76  T=1.31 s (65.5 files/s, 10640.2 lines/s)
+github.com/AlDanial/cloc v 1.76  T=2.08 s (41.3 files/s, 6707.3 lines/s)
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-Python                          61           2810            938           6775
+Python                          61           2806            937           6777
 C                               17            417            226           1946
 Cython                           1             93             27            316
 C/C++ Header                     4             40              4            154
 YAML                             1              1              0            104
 make                             2             33              4             76
 -------------------------------------------------------------------------------
-SUM:                            86           3394           1199           9371
+SUM:                            86           3390           1198           9373
 -------------------------------------------------------------------------------
