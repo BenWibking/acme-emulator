@@ -5,7 +5,6 @@ import getdist.plots
 import argparse
 from pylatexenc.latexencode import utf8tolatex
 from pathlib import Path
-from preliminize import preliminize
 from plot_posterior import get_samples
 
 
