@@ -28,7 +28,7 @@ You will need to download the simulation data products by running:
 python download_sim_files.py
 ```
 
-*This will require approximately 250 GB of storage and it may take 24 hours or more to download, even over a fast connection.* **This is only required to re-create the emulator 'from scratch.'** If you only want to use the precomputed emulator as described in Wibking+ (2019), this is not necessary.
+*This will require approximately 350 GB of storage and it may take 24 hours or more to download, even over a fast connection.* **This is only required to re-create the emulator 'from scratch.'** If you only want to use the precomputed emulator as described in Wibking+ (2019), this is not necessary.
 
 You can specify another download location (e.g. on another filesystem) with the --download_path option. The analysis scripts assume that the simulation files are accessible from within this directory, so you will need to create a symbolic link to the download path from the repository directory.
 
