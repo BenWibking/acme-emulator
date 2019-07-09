@@ -1,5 +1,5 @@
 [settings]
-sample_params = ngal siglogM M1_over_Mmin M0_over_M1 alpha
+sample_params = ngal siglogM M1_over_Mmin M0_over_M1 alpha A_conc R_rescale
 
 [gaussian_priors]
 ds_calibration_prior = 0.06
