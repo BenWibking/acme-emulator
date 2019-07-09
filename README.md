@@ -1,6 +1,8 @@
 # acme-emulator
 "Another Cosmological halo Model Emulator" (ACME)
 
+Source files and functions are individually documented *(currently incomplete)* here: https://benwibking.github.io/acme-emulator/
+
 ## Installation
 
 Clone this git repository. It is recommended to create a new virtual environment for ACME (Python 3.7+ is *required* for using ACME). Then install all required Python packages as such:
