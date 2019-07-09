@@ -42,6 +42,7 @@ doit -f convert_abacuscosmos.py sample=lowz
 
 The Latin Hypercube design for the training data can be created via:
 ```
+mkdir Params/LOWZ_HOD
 python create_params_lowz_emu.py
 ```
 *This step is **not** deterministic. If you delete the created parameter files, there's no way to re-generate them.* This may be fixed in a future version.
@@ -50,7 +51,6 @@ python create_params_lowz_emu.py
 
 The training data can be computed with:
 ```
-mkdir Params/LOWZ_HOD
 doit -f analyze_abacuscosmos.py sample=lowz
 ```
 
