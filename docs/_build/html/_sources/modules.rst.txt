@@ -6,7 +6,6 @@ Analysis
 
    add_noise
    analytic_hod_test
-   autocorrelation_Corrfunc
    average_correlation_function
    average_number_density
    compute_DeltaSigma
@@ -30,7 +29,6 @@ Analysis
    compute_wp
    compute_zeff
    create_bins_file
-   crosscorrelation_Corrfunc
    fit_clustering
    lensing_kernel
    output_new_parameter_seed
