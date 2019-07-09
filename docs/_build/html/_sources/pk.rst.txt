@@ -2,6 +2,6 @@ pk module
 =========
 
 .. automodule:: pk
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :undoc-members:
+   :show-inheritance:

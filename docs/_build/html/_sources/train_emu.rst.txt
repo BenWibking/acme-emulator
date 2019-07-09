@@ -1,7 +1,7 @@
-add\_noise module
+train\_emu module
 =================
 
-.. automodule:: add_noise
+.. automodule:: train_emu
    :members:
    :undoc-members:
    :show-inheritance:
