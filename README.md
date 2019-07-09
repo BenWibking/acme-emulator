@@ -50,6 +50,7 @@ python create_params_lowz_emu.py
 
 The training data can be computed with:
 ```
+mkdir Params/LOWZ_HOD
 doit -f analyze_abacuscosmos.py sample=lowz
 ```
 
