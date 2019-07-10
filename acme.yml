@@ -46,15 +46,18 @@ dependencies:
   - zlib=1.2.11=h14c3975_1004
   - pip:
     - alabaster==0.7.12
+    - asn1crypto==0.24.0
     - attrs==19.1.0
     - babel==2.7.0
     - beautifulsoup4==4.6.3
     - boxsdk==2.5.0
     - camb==1.0.4
+    - cffi==1.12.3
     - chardet==3.0.4
     - cloudpickle==1.2.1
     - colossus==1.2.9
     - corrfunc==2.3.1
+    - cryptography==2.7
     - cycler==0.10.0
     - cython==0.29.2
     - diversipy==0.8
@@ -76,8 +79,10 @@ dependencies:
     - pandas==0.23.4
     - pathlib2==2.3.3
     - progressbar2==3.42.0
+    - pycparser==2.19
     - pygments==2.4.2
     - pyinotify==0.9.6
+    - pyjwt==1.7.1
     - pylatexenc==1.4
     - pymultinest==2.7
     - pyparsing==2.4.0
