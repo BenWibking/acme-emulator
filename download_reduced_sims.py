@@ -1,6 +1,6 @@
 from boxsdk import JWTAuth, Client
 from boxsdk.object.folder import Folder
-from pprint import pprint
+from pathlib import PurePosixPath, Path
 import os
 import os.path
 import pycurl
@@ -14,6 +14,9 @@ pathToConfigJson = "boxapi_config.json"
 
 # Set the path to a folder you'd like to traverse here!
 shared_link_url = "https://osu.box.com/v/acme-simulations-reduced"
+
+# Set the path to the local download folder
+local_download_path = "./AbacusCosmos"
 
 
 ## Functions ##
@@ -38,11 +41,16 @@ def get_authenticated_client(configPath):
 	return Client(auth)
 
 
+def get_path(item, truncate_prefix=0):
+	parents = map(lambda p: p['name'], item.path_collection['entries'][truncate_prefix:])
+	path = f"{'/'.join(parents)}/{item.name}".strip('/')
+	return path
+
+
 def print_path(item):
 	"""Print the ID and path of a given Box file or folder."""
 	item_id = item.id.rjust(12, ' ')
-	parents = map(lambda p: p['name'], item.path_collection['entries'])
-	path = f"{'/'.join(parents)}/{item.name}".strip('/')
+	path = get_path(item)
 	print(f"{item_id} /{path}")
 
 	
@@ -74,7 +82,7 @@ def print_user_info(client):
 	print(f"Login: {user.login}")
 
 	
-def download_file(file):
+def download_file(file, download_root):
 	"""Download a Box file, saving it with its 'intrinsic' path inside local_root.
 
 	Arguments:
@@ -83,10 +91,11 @@ def download_file(file):
 
 	## determine remote url
 	data_product_url = file.get_download_url()
-	print(f"url: {data_product_url}")
 
 	## determine local download location
-	download_path = Path()
+	download_path = download_root / PurePosixPath(get_path(file, truncate_prefix=1))
+
+	print(f"download to: {download_path}")
 
 	if not os.path.exists(download_path.parent):
 		os.makedirs(download_path.parent)
@@ -133,10 +142,12 @@ def download_file(file):
 		fp.close()
 		bar.finish()
 
+	print(f"")
 
-def walk_folder_tree(folder):
+
+def walk_folder_tree(folder, download_root):
 	"""Traverse a Box folder tree, performing the specified action on every file and folder.
-	
+
 	Arguments:
 		folder {Folder} -- The Box folder to traverse.
 	"""
@@ -145,13 +156,13 @@ def walk_folder_tree(folder):
 	
 	for file in filter(lambda i: i.type=="file", subitems):
 		print_path(file)
-		download_file(file)
+		download_file(file, download_root)
 
 	for subfolder in filter(lambda i: i.type=="folder", subitems):
-		walk_folder_tree(subfolder)
+		walk_folder_tree(subfolder, download_root)
 
 		
-def print_folder_tree(folder):
+def print_folder_tree(folder, download_root):
 	"""Print the contents of a Box folder tree
 	
 	Arguments:
@@ -161,7 +172,7 @@ def print_folder_tree(folder):
 	print("File Listing")
 	print(f"{'ID'.ljust(12)} Path")
 
-	walk_folder_tree(folder)
+	walk_folder_tree(folder, download_root)
 
 
 ## Main ##
@@ -180,4 +191,6 @@ if __name__ == "__main__":
 	folderId = shared_item.id
 	
 	# Print a file and folder listing
-	print_folder_tree(shared_item)
+	download_root = Path(local_download_path)
+	assert(download_root.exists())
+	print_folder_tree(shared_item, download_root)
