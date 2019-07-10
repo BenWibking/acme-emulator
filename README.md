@@ -77,9 +77,19 @@ python Analysis/train_emu.py Params/LOWZ_HOD_precomputed/*.seed_42.template_para
 For approximately 400 training points, this will take 30 seconds to 5 minutes per correlation function bin, depending on your CPU speed.
 
 
+## Computing predictions from the emulator
+
+See `Analysis/predict_emulator.py` for an example of how to use the emulator to make predictions as a function of HOD and cosmological parameters:
+```
+python Analysis/predict_emulator.py 
+usage: predict_emulator.py [-h]
+                           input_emu_filename input_parameters output_wp_file
+predict_emulator.py: error: the following arguments are required: input_emu_filename, input_parameters, output_wp_file
+```
+
 ### Computing auxiliary data
 
-In order to use the emulator on data, it is strongly advised that you also compute the following auxiliary pieces of data.
+In order to use the emulator to draw inferences from data, it is strongly advised that you also compute the following auxiliary pieces of data that account for sample variance and residual redshift space distortions, which are effects not included in the training data.
 
 #### Computing correction from ensemble average
 
@@ -88,3 +98,22 @@ To be written.
 #### Computing RSD correction
 
 To be written.
+
+
+### Computing posterior samples with MultiNest
+
+See `Analysis/fit_clustering.py` for an example of how to do this. Covariance matrices and data are not currently provided.
+```
+usage: fit_clustering.py [-h] [--multinest MULTINEST] [--mcmc]
+                         [--mcmc-ppd MCMC_PPD] [--mcmc-chain MCMC_CHAIN]
+                         [--wp-correction WP_CORRECTION]
+                         [--ds-correction DS_CORRECTION]
+                         [--rsd-correction RSD_CORRECTION]
+                         [--cov-inv-output COV_INV_OUTPUT]
+                         [--cov-output COV_OUTPUT]
+                         wp_obs_file input_wp_emu_filename wp_cov_file
+                         ds_obs_file input_ds_emu_filename ds_cov_file
+                         fiducial_param_file param_sampling_file fit_wp_file
+                         fit_ds_file fit_param_file
+fit_clustering.py: error: the following arguments are required: wp_obs_file, input_wp_emu_filename, wp_cov_file, ds_obs_file, input_ds_emu_filename, ds_cov_file, fiducial_param_file, param_sampling_file, fit_wp_file, fit_ds_file, fit_param_file
+```
