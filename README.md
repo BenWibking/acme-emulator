@@ -77,7 +77,7 @@ python Analysis/train_emu.py Params/LOWZ_HOD_precomputed/*.seed_42.template_para
 For approximately 400 training points, this will take 30 seconds to 5 minutes per correlation function bin, depending on your CPU speed.
 
 
-## Computing predictions from the emulator
+### Computing predictions from the emulator
 
 See `Analysis/predict_emulator.py` for an example of how to use the emulator to make predictions as a function of HOD and cosmological parameters:
 ```
