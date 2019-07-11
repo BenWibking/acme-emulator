@@ -731,7 +731,7 @@ if __name__ == '__main__':
 
 	parser = argparse.ArgumentParser()
 	
-	parser.add_argument('--output_emu_filename', default='lowz_emu_wpratio.hdf5')
+	parser.add_argument('--output_emu_filename', required=True)
 	parser.add_argument('--sims_dir', default='./AbacusCosmos/AbacusCosmos_720box/Rockstar')
 	parser.add_argument('--redshift_dir', default='z0.300')
 	parser.add_argument('param_files', nargs='*')

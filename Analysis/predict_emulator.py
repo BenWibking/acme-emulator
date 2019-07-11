@@ -239,6 +239,8 @@ if __name__ == '__main__':
 	siglogM = float(params['siglogM'])
 	alpha 	= float(params['alpha'])
 	f_cen	= float(params['f_cen']) # NOTE: currently unused in emulator
+	A_conc  = float(params['A_conc'])
+	R_rescale = float(params['R_rescale'])
 
 	omega_m = float(params['omega_m'])
 	sigma_8 = float(params['sigma_8'])
@@ -259,11 +261,16 @@ if __name__ == '__main__':
 
 	## compute emulated ratio
 
-	emulate_fun, wp_binmin, wp_binmax = get_emulate_fun(args.input_emu_filename)
+	wp_emulate_fun, wp_binmin, wp_binmax = get_emulate_fun(args.input_emu_filename)
 
 	input_parameters = np.array([ngal, siglogM, M0_over_M1, M1_over_Mmin, alpha,
-								sigma_8, H0, ombh2, omch2, w0, ns])
-	predicted_wp_ratio = emulate_fun(input_parameters)
+								 A_conc, R_rescale,
+								 sigma_8, H0, ombh2, omch2, w0, ns])
+
+	predicted_wp_ratio_uncorrected = wp_emulate_fun(input_parameters)
+#	predicted_ds_uncorrected = ds_emulate_fun(input_parameters)
+
+	predicted_wp_ratio = predicted_wp_ratio_uncorrected
 
 	print(f"predicted ratio = {predicted_wp_ratio}")
 	
