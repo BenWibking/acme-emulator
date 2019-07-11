@@ -20,7 +20,7 @@ parser.add_argument('--do-not-subsample',default=True,action='store_true')
 args = parser.parse_args()
 
 boxsize = float(args.boxsize)
-nthreads = 8
+nthreads = 2
 binfile = path.abspath(str(args.bin_file))
 
 infile = h5.File(str(args.HOD_mock_file), 'r')
