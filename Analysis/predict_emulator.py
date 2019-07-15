@@ -219,12 +219,21 @@ if __name__ == '__main__':
 
 	parser = argparse.ArgumentParser()
 	
-	parser.add_argument('input_emu_filename')
+
 	parser.add_argument('input_parameters')
+	parser.add_argument('--input_emu_filename', default='lowz_wpratio_emu.hdf5')
+	parser.add_argument('--input_wp_correction', default='./Params/lowz_wp_correction.txt')
+	parser.add_argument('--input_rsd_correction', default='./Params/lowz_rsd_correction.txt')
+
 	parser.add_argument('output_wp_file')
 	
 	args = parser.parse_args()
-	
+
+
+	## read correction files
+
+	corr_binmin, corr_binmax, _, wp_correction = np.loadtxt(args.input_wp_correction, unpack=True)
+	rsd_binmin, rsd_binmax, _, rsd_correction = np.loadtxt(args.input_rsd_correction, unpack=True)
 	
 	## read input parameters
 	
@@ -267,10 +276,10 @@ if __name__ == '__main__':
 								 A_conc, R_rescale,
 								 sigma_8, H0, ombh2, omch2, w0, ns])
 
-	predicted_wp_ratio_uncorrected = wp_emulate_fun(input_parameters)
 #	predicted_ds_uncorrected = ds_emulate_fun(input_parameters)
+	predicted_wp_ratio_uncorrected = wp_emulate_fun(input_parameters)
 
-	predicted_wp_ratio = predicted_wp_ratio_uncorrected
+	predicted_wp_ratio = (predicted_wp_ratio_uncorrected * wp_correction) * rsd_correction
 
 	print(f"predicted ratio = {predicted_wp_ratio}")
 	
@@ -288,6 +297,7 @@ if __name__ == '__main__':
 
 	print(f"predicted wp = {predicted_wp}")
 	print(f"rp = {0.5*(wp_binmin+wp_binmax)}")
+
 
 	
 	## output prediction to file

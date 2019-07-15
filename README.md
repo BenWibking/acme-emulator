@@ -81,10 +81,7 @@ For approximately 400 training points, this will take 30 seconds to 5 minutes pe
 
 See `Analysis/predict_emulator.py` for an example of how to use the emulator to make predictions as a function of HOD and cosmological parameters:
 ```
-python Analysis/predict_emulator.py 
-usage: predict_emulator.py [-h]
-                           input_emu_filename input_parameters output_wp_file
-predict_emulator.py: error: the following arguments are required: input_emu_filename, input_parameters, output_wp_file
+python Analysis/predict_emulator.py Params/NHOD_lowz_fiducial_params.template_param fiducial_wp.txt
 ```
 
 ### Computing auxiliary data
