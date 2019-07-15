@@ -77,24 +77,26 @@ python Analysis/train_emu.py Params/LOWZ_HOD_precomputed/*.seed_42.template_para
 For approximately 400 training points, this will take 30 seconds to 5 minutes per correlation function bin, depending on your CPU speed.
 
 
-### Computing predictions from the emulator
-
-See `Analysis/predict_emulator.py` for an example of how to use the emulator to make predictions as a function of HOD and cosmological parameters:
-```
-python Analysis/predict_emulator.py Params/NHOD_lowz_fiducial_params.template_param fiducial_wp.txt
-```
-
 ### Computing auxiliary data
 
 In order to use the emulator to draw inferences from data, it is strongly advised that you also compute the following auxiliary pieces of data that account for sample variance and residual redshift space distortions, which are effects not included in the training data.
 
 #### Computing correction from ensemble average
 
-To be written.
+To be written. Precomputed version is ./Params/lowz_wp_correction.txt
 
-#### Computing RSD correction
+#### Computing (fiducial) RSD correction
 
-To be written.
+To be written. Precomputed version is ./Params/lowz_rsd_correction.txt
+
+
+
+### Computing predictions from the emulator
+
+See `Analysis/predict_emulator.py` for an example of how to use the emulator to make predictions as a function of HOD and cosmological parameters:
+```
+python Analysis/predict_emulator.py Params/NHOD_lowz_fiducial_params.template_param fiducial_wp.txt
+```
 
 
 ### Computing posterior samples with MultiNest
