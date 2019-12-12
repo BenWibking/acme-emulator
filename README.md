@@ -29,12 +29,13 @@ In order to compute parameter posterior distributions as done in the ACME paper,
 
 If you want to compute new training samples (or to re-compute the training samples used in Wibking+ (2019) from scratch) You will need to download the *reduced* simulation data products by running:
 ```
-python download_reduced_sims.py
+curl https://cloudstor.aarnet.edu.au/plus/s/mTqRMl6p8R6MZrI/download > AbacusCosmos.tar
+tar xvf AbacusCosmos.tar
 ```
 
 *This will require 20.6 GB of storage and it may take several hours to download.* **This is only required to re-create or extend the emulator.** If you only want to use the precomputed emulator as described in Wibking+ (2019), this is not necessary.
 
-The files will be downloaded to the ./AbacusCosmos/ directory.  If the download script is interrupted or killed, you can re-run the script and the download will automatically restart where it left off.
+The files should be extracted to the ./AbacusCosmos/ directory.
 
 
 ### Creating a Latin Hypercube
